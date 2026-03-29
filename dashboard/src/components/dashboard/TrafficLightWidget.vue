@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import AppCard from '@/components/common/AppCard.vue'
 import type { OccupancyLevel } from '@/types/domain'
 
@@ -8,15 +8,15 @@ const props = defineProps<{
 }>()
 
 const levels = {
-  bajo: { label: 'Ocupación baja', color: 'bg-success' },
-  medio: { label: 'Ocupación media', color: 'bg-warning' },
-  alto: { label: 'Ocupación alta', color: 'bg-danger' },
+  bajo: { label: 'Ocupacion baja', color: 'bg-success' },
+  medio: { label: 'Ocupacion media', color: 'bg-warning' },
+  alto: { label: 'Ocupacion alta', color: 'bg-danger' },
 }
 </script>
 
 <template>
   <AppCard>
-    <h3 class="text-sm font-semibold">Semáforo de ocupación</h3>
+    <h3 class="text-sm font-semibold">Semaforo de ocupacion</h3>
     <div class="mt-4 flex items-center gap-5">
       <div class="space-y-2">
         <div

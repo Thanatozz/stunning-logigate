@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { Bar } from 'vue-chartjs'
@@ -35,6 +35,8 @@ function asRgb(triplet: string, alpha = 1) {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`
 }
 
+const visibleData = computed(() => props.data.slice(-5))
+
 const chartPalette = computed(() => {
   mode.value
   const styles = getComputedStyle(document.documentElement)
@@ -52,17 +54,17 @@ const chartPalette = computed(() => {
 })
 
 const chartData = computed(() => ({
-  labels: props.data.map((point) => point.hour),
+  labels: visibleData.value.map((point) => point.hour),
   datasets: [
     {
       label: 'Ingresos',
-      data: props.data.map((point) => point.entries),
+      data: visibleData.value.map((point) => point.entries),
       backgroundColor: chartPalette.value.accent,
       borderRadius: 6,
     },
     {
       label: 'Salidas',
-      data: props.data.map((point) => point.exits),
+      data: visibleData.value.map((point) => point.exits),
       backgroundColor: chartPalette.value.success,
       borderRadius: 6,
     },
@@ -106,9 +108,9 @@ const chartOptions = computed(() => ({
 </script>
 
 <template>
-  <AppCard>
-    <h3 class="text-sm font-semibold">Actividad por hora</h3>
-    <div class="mt-3 h-72">
+  <AppCard class="flex h-full flex-col">
+    <h3 class="text-sm font-semibold">Actividad por hora (ultimas 5 horas)</h3>
+    <div class="mt-3 min-h-[18rem] flex-1">
       <Bar :data="chartData" :options="chartOptions" />
     </div>
   </AppCard>

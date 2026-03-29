@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import DashboardShell from '@/components/dashboard/DashboardShell.vue'
 import KpiCard from '@/components/dashboard/KpiCard.vue'
 import TrafficLightWidget from '@/components/dashboard/TrafficLightWidget.vue'
+import FreeSlotsCard from '@/components/dashboard/FreeSlotsCard.vue'
 import ActivityChart from '@/components/dashboard/ActivityChart.vue'
 import AlertsPanel from '@/components/dashboard/AlertsPanel.vue'
 import RecentActivityFeed from '@/components/dashboard/RecentActivityFeed.vue'
@@ -51,21 +52,23 @@ const summaryFeed = computed(() => recentActivity.value.slice(0, 8))
     </section>
 
     <section class="grid gap-4 xl:grid-cols-12">
-      <div class="xl:col-span-4">
+      <div class="xl:col-span-3 self-start flex flex-col gap-4">
         <TrafficLightWidget :level="plantState.occupancyLevel" :percent="dashboardStore.occupancyPercent" />
+        <FreeSlotsCard
+          :current-count="plantState.currentCount"
+          :max-capacity="plantState.maxCapacity"
+        />
       </div>
-      <div class="xl:col-span-8">
-        <ActivityChart :data="chartSeries.activityByHour" />
+      <div class="xl:col-span-3">
+        <AlertsPanel :alerts="latestAlerts" />
+      </div>
+      <div class="xl:col-span-6">
+        <ActivityChart class="h-full" :data="chartSeries.activityByHour" />
       </div>
     </section>
 
-    <section class="grid gap-4 xl:grid-cols-12">
-      <div class="xl:col-span-4">
-        <AlertsPanel :alerts="latestAlerts" />
-      </div>
-      <div class="xl:col-span-8">
-        <RecentActivityFeed :items="summaryFeed" />
-      </div>
+    <section>
+      <RecentActivityFeed :items="summaryFeed" />
     </section>
   </DashboardShell>
 </template>
