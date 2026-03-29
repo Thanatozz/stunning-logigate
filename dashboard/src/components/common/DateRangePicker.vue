@@ -8,13 +8,13 @@ const to = defineModel<string>('to', { default: '' })
     <input
       v-model="from"
       type="date"
-      class="w-full rounded-xl border border-line bg-white px-3 py-2.5 text-sm outline-none ring-accent transition focus:ring-2"
+      class="w-full rounded-xl border border-line bg-panel px-3 py-2.5 text-sm text-ink outline-none ring-accent transition focus:ring-2"
       aria-label="Fecha inicio"
     />
     <input
       v-model="to"
       type="date"
-      class="w-full rounded-xl border border-line bg-white px-3 py-2.5 text-sm outline-none ring-accent transition focus:ring-2"
+      class="w-full rounded-xl border border-line bg-panel px-3 py-2.5 text-sm text-ink outline-none ring-accent transition focus:ring-2"
       aria-label="Fecha fin"
     />
   </div>

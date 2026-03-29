@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { storeToRefs } from 'pinia'
 import { Bar } from 'vue-chartjs'
 import {
   BarElement,
@@ -11,6 +12,7 @@ import {
   Tooltip,
 } from 'chart.js'
 import AppCard from '@/components/common/AppCard.vue'
+import { useThemeStore } from '@/stores/theme.store'
 import type { ActivityByHourPoint } from '@/types/domain'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
@@ -19,25 +21,55 @@ const props = defineProps<{
   data: ActivityByHourPoint[]
 }>()
 
+const themeStore = useThemeStore()
+const { mode } = storeToRefs(themeStore)
+
+function readThemeTriplet(styles: CSSStyleDeclaration, token: string, fallback: string) {
+  return styles.getPropertyValue(`--${token}`).trim() || fallback
+}
+
+function asRgb(triplet: string, alpha = 1) {
+  const parts = triplet.split(/\s+/).map((value) => Number.parseInt(value, 10))
+  const [r, g, b] = parts.length === 3 ? parts : [15, 23, 42]
+  if (alpha === 1) return `rgb(${r} ${g} ${b})`
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`
+}
+
+const chartPalette = computed(() => {
+  mode.value
+  const styles = getComputedStyle(document.documentElement)
+  const accent = readThemeTriplet(styles, 'color-accent', '15 91 255')
+  const success = readThemeTriplet(styles, 'color-success', '29 157 95')
+  const muted = readThemeTriplet(styles, 'color-muted', '95 114 138')
+  const line = readThemeTriplet(styles, 'color-line', '217 227 243')
+
+  return {
+    accent: asRgb(accent),
+    success: asRgb(success),
+    labels: asRgb(muted),
+    grid: asRgb(line, 0.55),
+  }
+})
+
 const chartData = computed(() => ({
   labels: props.data.map((point) => point.hour),
   datasets: [
     {
       label: 'Ingresos',
       data: props.data.map((point) => point.entries),
-      backgroundColor: '#0f5bff',
+      backgroundColor: chartPalette.value.accent,
       borderRadius: 6,
     },
     {
       label: 'Salidas',
       data: props.data.map((point) => point.exits),
-      backgroundColor: '#1d9d5f',
+      backgroundColor: chartPalette.value.success,
       borderRadius: 6,
     },
   ],
 }))
 
-const chartOptions = {
+const chartOptions = computed(() => ({
   responsive: true,
   maintainAspectRatio: false,
   plugins: {
@@ -47,23 +79,30 @@ const chartOptions = {
         boxWidth: 10,
         boxHeight: 10,
         useBorderRadius: true,
+        color: chartPalette.value.labels,
       },
     },
   },
   scales: {
     y: {
       beginAtZero: true,
+      ticks: {
+        color: chartPalette.value.labels,
+      },
       grid: {
-        color: '#e6eefb',
+        color: chartPalette.value.grid,
       },
     },
     x: {
+      ticks: {
+        color: chartPalette.value.labels,
+      },
       grid: {
         display: false,
       },
     },
   },
-}
+}))
 </script>
 
 <template>

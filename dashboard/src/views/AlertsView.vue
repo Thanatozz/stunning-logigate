@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import AppSectionHeader from '@/components/common/AppSectionHeader.vue'
-import EmptyState from '@/components/common/EmptyState.vue'
+import NoResultsState from '@/components/common/NoResultsState.vue'
 import AlertsFilters from '@/components/alerts/AlertsFilters.vue'
 import AlertsTable from '@/components/alerts/AlertsTable.vue'
 import { useAlertsStore } from '@/stores/alerts.store'
@@ -54,7 +54,7 @@ function clearFilters() {
       v-model:status="statusModel"
     />
 
-    <EmptyState
+    <NoResultsState
       v-if="!filteredAlerts.length"
       title="No hay alertas para mostrar"
       message="Ajusta los filtros o espera nuevos eventos del sistema."

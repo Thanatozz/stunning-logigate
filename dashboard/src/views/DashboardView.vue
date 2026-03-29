@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import AppSectionHeader from '@/components/common/AppSectionHeader.vue'
 import LoadingState from '@/components/common/LoadingState.vue'
+import ErrorState from '@/components/common/ErrorState.vue'
 import KpiCard from '@/components/dashboard/KpiCard.vue'
 import TrafficLightWidget from '@/components/dashboard/TrafficLightWidget.vue'
 import ActivityChart from '@/components/dashboard/ActivityChart.vue'
@@ -16,6 +17,7 @@ import { useAlertsStore } from '@/stores/alerts.store'
 import { useDevicesStore } from '@/stores/devices.store'
 import { useBarrierStore } from '@/stores/barrier.store'
 import { useAuthStore } from '@/stores/auth.store'
+import { useIotSimulatorStore } from '@/stores/iot-simulator.store'
 import { formatDateTime, formatMinutes } from '@/composables/useKpi'
 import type { BarrierMode } from '@/types/domain'
 
@@ -24,12 +26,14 @@ const alertsStore = useAlertsStore()
 const devicesStore = useDevicesStore()
 const barrierStore = useBarrierStore()
 const authStore = useAuthStore()
+const iotSimulatorStore = useIotSimulatorStore()
 
-const { kpi, plantState, chartSeries, recentActivity, lastUpdated } = storeToRefs(dashboardStore)
+const { kpi, plantState, chartSeries, recentActivity, lastUpdated, error } = storeToRefs(dashboardStore)
 const { activeAlerts } = storeToRefs(alertsStore)
 const { devices } = storeToRefs(devicesStore)
 const { barrier, commandLog } = storeToRefs(barrierStore)
 const { canControlBarrier, currentUserName } = storeToRefs(authStore)
+const { isRunning, lastScenarioLabel, lastRunAt } = storeToRefs(iotSimulatorStore)
 
 const isLoading = ref(true)
 let refreshTimer: ReturnType<typeof setInterval> | null = null
@@ -52,6 +56,18 @@ function onCloseBarrier() {
   barrierStore.closeBarrier(getActorName())
 }
 
+function retryRefresh() {
+  dashboardStore.refreshSnapshot()
+}
+
+function toggleIotSimulation() {
+  iotSimulatorStore.toggle()
+}
+
+function triggerIotEvent() {
+  iotSimulatorStore.runOnce()
+}
+
 onMounted(() => {
   setTimeout(() => {
     isLoading.value = false
@@ -60,10 +76,13 @@ onMounted(() => {
   refreshTimer = setInterval(() => {
     dashboardStore.refreshSnapshot()
   }, 12000)
+
+  iotSimulatorStore.start(9000)
 })
 
 onBeforeUnmount(() => {
   if (refreshTimer) clearInterval(refreshTimer)
+  iotSimulatorStore.stop()
 })
 </script>
 
@@ -72,13 +91,49 @@ onBeforeUnmount(() => {
     <AppSectionHeader
       title="Dashboard operativo"
       :subtitle="`Ultima actualizacion: ${formatDateTime(lastUpdated)}`"
-    />
+    >
+      <template #actions>
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="rounded-full px-2 py-1 text-xs font-medium" :class="isRunning ? 'badge-success' : 'badge-neutral'">
+            {{ isRunning ? 'Modo demo IoT activo' : 'Modo demo IoT detenido' }}
+          </span>
+          <button
+            type="button"
+            class="btn-secondary px-2.5 py-1.5 text-xs font-medium"
+            @click="toggleIotSimulation"
+          >
+            {{ isRunning ? 'Pausar demo' : 'Activar demo' }}
+          </button>
+          <button
+            type="button"
+            class="btn-secondary px-2.5 py-1.5 text-xs font-medium"
+            @click="triggerIotEvent"
+          >
+            Simular evento
+          </button>
+        </div>
+      </template>
+    </AppSectionHeader>
+
+    <section class="panel-soft px-3 py-2 text-xs text-muted">
+      Ultimo evento IoT: {{ lastScenarioLabel }}<span v-if="lastRunAt"> · {{ formatDateTime(lastRunAt) }}</span>
+    </section>
 
     <section v-if="isLoading" class="card-panel p-5">
       <LoadingState />
     </section>
 
     <template v-else>
+      <section v-if="error" class="card-panel p-5">
+        <ErrorState
+          title="Fallo de actualizacion"
+          :message="error"
+          action-text="Reintentar sincronizacion"
+          @retry="retryRefresh"
+        />
+      </section>
+
+      <template v-else>
       <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard title="Camiones en planta" :value="kpi.trucksInPlant" detail="Ocupacion en tiempo real" />
         <KpiCard title="Ingresos de hoy" :value="kpi.todayEntries" detail="Eventos confirmados" />
@@ -122,6 +177,7 @@ onBeforeUnmount(() => {
           <RecentActivityFeed :items="recentActivity" />
         </div>
       </section>
+      </template>
     </template>
   </div>
 </template>

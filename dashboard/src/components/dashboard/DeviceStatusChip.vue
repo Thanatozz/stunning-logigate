@@ -9,7 +9,7 @@ defineProps<{
 </script>
 
 <template>
-  <article class="rounded-xl border border-line bg-slate-50 p-3">
+  <article class="panel-soft p-3">
     <div class="flex items-center justify-between gap-2">
       <p class="text-sm font-medium">{{ device.name }}</p>
       <StatusBadge :value="device.status" />

@@ -5,8 +5,48 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    color-scheme: light;
+
+    --color-surface: 243 246 251;
+    --color-panel: 255 255 255;
+    --color-line: 217 227 243;
+    --color-ink: 16 36 61;
+    --color-muted: 95 114 138;
+    --color-accent: 15 91 255;
+    --color-success: 29 157 95;
+    --color-warning: 216 154 0;
+    --color-danger: 212 63 82;
+
+    --color-surface-elevated: 248 250 252;
+    --shadow-soft: 0 8px 24px rgba(16, 36, 61, 0.08);
+  }
+
+  .dark {
+    color-scheme: dark;
+
+    --color-surface: 9 15 27;
+    --color-panel: 20 31 48;
+    --color-line: 71 91 121;
+    --color-ink: 241 246 255;
+    --color-muted: 188 202 224;
+    --color-accent: 96 139 255;
+    --color-success: 52 211 153;
+    --color-warning: 251 191 36;
+    --color-danger: 248 113 113;
+
+    --color-surface-elevated: 27 41 62;
+    --shadow-soft: 0 10px 28px rgba(0, 0, 0, 0.35);
+  }
+
   * {
     @apply border-line;
+  }
+
+  html,
+  body,
+  #app {
+    min-height: 100%;
   }
 
   body {
@@ -14,6 +54,13 @@
     background-image:
       radial-gradient(circle at 20% 15%, rgba(15, 91, 255, 0.08), transparent 34%),
       radial-gradient(circle at 80% 0%, rgba(29, 157, 95, 0.07), transparent 40%);
+    transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease;
+  }
+
+  .dark body {
+    background-image:
+      radial-gradient(circle at 15% 10%, rgba(96, 139, 255, 0.15), transparent 32%),
+      radial-gradient(circle at 85% 0%, rgba(52, 211, 153, 0.1), transparent 38%);
   }
 
   h1,
@@ -29,7 +76,164 @@
     @apply rounded-card border border-line bg-panel shadow-soft;
   }
 
+  .panel-soft {
+    @apply rounded-xl border border-line bg-surface-elevated;
+  }
+
+  .btn-secondary {
+    @apply rounded-lg border border-line bg-panel text-ink transition hover:bg-line/20;
+  }
+
+  .badge-neutral {
+    @apply bg-line/45 text-ink;
+  }
+
+  .badge-success {
+    @apply bg-success/20 text-success;
+  }
+
+  .badge-warning {
+    @apply bg-warning/20 text-warning;
+  }
+
+  .badge-danger {
+    @apply bg-danger/20 text-danger;
+  }
+
+  .badge-info {
+    @apply bg-accent/20 text-accent;
+  }
+
   .subtle-text {
     @apply text-sm text-muted;
+  }
+}
+
+@layer utilities {
+  /*
+   * Compatibility bridge:
+   * Asegura modo oscuro en componentes que todavia usan utilidades genericas.
+   * Para nuevos componentes, preferir: bg-panel, bg-surface, text-ink, text-muted, border-line.
+   */
+  .dark .bg-white {
+    background-color: rgb(var(--color-panel) / 1) !important;
+  }
+
+  .dark .bg-white\/90 {
+    background-color: rgb(var(--color-panel) / 0.9) !important;
+  }
+
+  .dark .bg-slate-50 {
+    background-color: rgb(var(--color-surface-elevated) / 1) !important;
+  }
+
+  .dark .bg-slate-100 {
+    background-color: rgb(var(--color-line) / 0.35) !important;
+  }
+
+  .dark .bg-slate-200 {
+    background-color: rgb(var(--color-line) / 0.5) !important;
+  }
+
+  .dark .hover\:bg-slate-50:hover {
+    background-color: rgb(var(--color-line) / 0.22) !important;
+  }
+
+  .dark .hover\:bg-slate-100:hover {
+    background-color: rgb(var(--color-line) / 0.28) !important;
+  }
+
+  .dark .text-slate-700 {
+    color: rgb(203 213 225 / 1) !important;
+  }
+
+  .dark .text-slate-200 {
+    color: rgb(226 232 240 / 1) !important;
+  }
+
+  .dark .text-slate-100 {
+    color: rgb(241 245 249 / 1) !important;
+  }
+
+  .dark .text-slate-100\/90 {
+    color: rgb(241 245 249 / 0.9) !important;
+  }
+
+  .dark .bg-white\/20 {
+    background-color: rgb(var(--color-panel) / 0.2) !important;
+  }
+
+  .dark .bg-white\/10 {
+    background-color: rgb(var(--color-panel) / 0.1) !important;
+  }
+
+  .dark .border-white\/20 {
+    border-color: rgb(255 255 255 / 0.2) !important;
+  }
+
+  .dark .border-white\/15 {
+    border-color: rgb(255 255 255 / 0.15) !important;
+  }
+
+  .dark .border-white\/10 {
+    border-color: rgb(255 255 255 / 0.1) !important;
+  }
+
+  .dark .bg-emerald-100,
+  .dark .bg-green-100 {
+    background-color: rgb(16 185 129 / 0.22) !important;
+  }
+
+  .dark .text-emerald-700,
+  .dark .text-green-700 {
+    color: rgb(110 231 183 / 1) !important;
+  }
+
+  .dark .text-green-800 {
+    color: rgb(134 239 172 / 1) !important;
+  }
+
+  .dark .bg-red-100,
+  .dark .bg-red-50 {
+    background-color: rgb(239 68 68 / 0.2) !important;
+  }
+
+  .dark .text-red-700,
+  .dark .text-red-800 {
+    color: rgb(252 165 165 / 1) !important;
+  }
+
+  .dark .bg-amber-100 {
+    background-color: rgb(251 191 36 / 0.22) !important;
+  }
+
+  .dark .text-amber-700,
+  .dark .text-amber-800 {
+    color: rgb(253 230 138 / 1) !important;
+  }
+
+  .dark .bg-sky-100 {
+    background-color: rgb(96 139 255 / 0.22) !important;
+  }
+
+  .dark .text-sky-700 {
+    color: rgb(191 219 254 / 1) !important;
+  }
+
+  .dark .bg-violet-100 {
+    background-color: rgb(167 139 250 / 0.22) !important;
+  }
+
+  .dark .text-violet-700 {
+    color: rgb(221 214 254 / 1) !important;
+  }
+
+  .dark .border-red-300,
+  .dark .border-red-200 {
+    border-color: rgb(248 113 113 / 0.45) !important;
+  }
+
+  .dark .bg-slate-900\/45 {
+    background-color: rgb(2 6 23 / 0.55) !important;
   }
 }

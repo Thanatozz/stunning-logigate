@@ -1,7 +1,7 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { mockBarrierState } from '@/data/mock/settings'
-import type { BarrierMode, BarrierState } from '@/types/domain'
+import type { BarrierMode, BarrierState, BarrierStatus } from '@/types/domain'
 
 export const useBarrierStore = defineStore('barrier', () => {
   const barrier = ref<BarrierState>({ ...mockBarrierState })
@@ -12,11 +12,18 @@ export const useBarrierStore = defineStore('barrier', () => {
 
   const isOpen = computed(() => barrier.value.status === 'abierta')
 
+  function pushLog(entry: string) {
+    commandLog.value.unshift(entry)
+    if (commandLog.value.length > 30) {
+      commandLog.value = commandLog.value.slice(0, 30)
+    }
+  }
+
   function setMode(mode: BarrierMode, actor: string) {
     barrier.value.mode = mode
     barrier.value.lastActionAt = new Date().toISOString()
     barrier.value.lastActionBy = actor
-    commandLog.value.unshift(
+    pushLog(
       `${formatHour(new Date())} Cambio de modo a ${translateMode(mode)} por ${actor}`,
     )
   }
@@ -25,14 +32,21 @@ export const useBarrierStore = defineStore('barrier', () => {
     barrier.value.status = 'abierta'
     barrier.value.lastActionAt = new Date().toISOString()
     barrier.value.lastActionBy = actor
-    commandLog.value.unshift(`${formatHour(new Date())} Apertura de barrera por ${actor}`)
+    pushLog(`${formatHour(new Date())} Apertura de barrera por ${actor}`)
   }
 
   function closeBarrier(actor: string) {
     barrier.value.status = 'cerrada'
     barrier.value.lastActionAt = new Date().toISOString()
     barrier.value.lastActionBy = actor
-    commandLog.value.unshift(`${formatHour(new Date())} Cierre de barrera por ${actor}`)
+    pushLog(`${formatHour(new Date())} Cierre de barrera por ${actor}`)
+  }
+
+  function setBarrierStatus(status: BarrierStatus, actor: string, reason: string) {
+    barrier.value.status = status
+    barrier.value.lastActionAt = new Date().toISOString()
+    barrier.value.lastActionBy = actor
+    pushLog(`${formatHour(new Date())} ${reason} por ${actor}`)
   }
 
   return {
@@ -42,6 +56,7 @@ export const useBarrierStore = defineStore('barrier', () => {
     setMode,
     openBarrier,
     closeBarrier,
+    setBarrierStatus,
   }
 })
 

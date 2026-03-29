@@ -7,10 +7,10 @@ defineProps<{
 }>()
 
 const levelClasses = {
-  normal: 'bg-slate-100 text-slate-700',
-  info: 'bg-sky-100 text-sky-700',
-  warning: 'bg-amber-100 text-amber-700',
-  critical: 'bg-red-100 text-red-700',
+  normal: 'badge-neutral',
+  info: 'badge-info',
+  warning: 'badge-warning',
+  critical: 'badge-danger',
 }
 </script>
 
@@ -18,7 +18,7 @@ const levelClasses = {
   <section class="card-panel p-4 sm:p-5">
     <h3 class="mb-3 text-sm font-semibold">Actividad reciente</h3>
     <ul class="space-y-2.5">
-      <li v-for="item in items" :key="item.id" class="rounded-xl border border-line bg-slate-50 p-3">
+      <li v-for="item in items" :key="item.id" class="panel-soft p-3">
         <div class="flex items-center justify-between gap-2">
           <p class="text-sm font-medium text-ink">{{ item.title }}</p>
           <span class="rounded-full px-2 py-0.5 text-[11px] font-medium" :class="levelClasses[item.level]">

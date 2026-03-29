@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import AppSectionHeader from '@/components/common/AppSectionHeader.vue'
 import SearchInput from '@/components/common/SearchInput.vue'
-import EmptyState from '@/components/common/EmptyState.vue'
+import NoResultsState from '@/components/common/NoResultsState.vue'
 import VehicleTable from '@/components/vehicles/VehicleTable.vue'
 import VehicleFormModal from '@/components/vehicles/VehicleFormModal.vue'
 import { useVehiclesStore } from '@/stores/vehicles.store'
@@ -64,7 +64,7 @@ function removeVehicle(plate: string) {
       <SearchInput v-model="searchModel" placeholder="Buscar por patente, empresa o carga" />
     </section>
 
-    <EmptyState
+    <NoResultsState
       v-if="!filteredVehicles.length"
       title="Sin vehiculos"
       message="No hay coincidencias con el filtro actual."

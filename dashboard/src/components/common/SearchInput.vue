@@ -12,7 +12,7 @@ defineProps<{
     <input
       v-model="model"
       type="search"
-      class="w-full rounded-xl border border-line bg-white py-2.5 pl-3 pr-3 text-sm outline-none ring-accent transition focus:ring-2"
+      class="w-full rounded-xl border border-line bg-panel py-2.5 pl-3 pr-3 text-sm text-ink outline-none ring-accent transition focus:ring-2"
       :placeholder="placeholder ?? 'Buscar...'"
     />
   </label>

@@ -7,7 +7,7 @@ defineProps<{
 <template>
   <button
     type="button"
-    class="rounded-xl border border-line bg-white px-3 py-2 text-sm font-medium text-ink transition hover:bg-slate-50"
+    class="btn-secondary rounded-xl px-3 py-2 text-sm font-medium"
   >
     {{ label }}
   </button>

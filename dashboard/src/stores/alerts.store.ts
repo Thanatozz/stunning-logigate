@@ -9,6 +9,15 @@ interface AlertFilters {
   status: AlertStatus | ''
 }
 
+export interface CreateAlertPayload {
+  type: AlertType
+  description: string
+  severity: AlertSeverity
+  source: string
+  relatedPlate?: string
+  status?: AlertStatus
+}
+
 export const useAlertsStore = defineStore('alerts', () => {
   const alerts = ref<Alert[]>([...mockAlerts])
   const filters = ref<AlertFilters>({
@@ -44,6 +53,30 @@ export const useAlertsStore = defineStore('alerts', () => {
     alert.status = 'ignorada'
   }
 
+  function createAlert(payload: CreateAlertPayload) {
+    const newAlert: Alert = {
+      id: `al-${Math.random().toString(36).slice(2, 10)}`,
+      type: payload.type,
+      description: payload.description,
+      severity: payload.severity,
+      status: payload.status ?? 'activa',
+      timestamp: new Date().toISOString(),
+      relatedPlate: payload.relatedPlate,
+      source: payload.source,
+    }
+    alerts.value.unshift(newAlert)
+    if (alerts.value.length > 60) {
+      alerts.value = alerts.value.slice(0, 60)
+    }
+    return newAlert.id
+  }
+
+  function resolveLatestActiveByType(type: AlertType) {
+    const active = alerts.value.find((item) => item.type === type && item.status === 'activa')
+    if (!active) return
+    active.status = 'resuelta'
+  }
+
   return {
     alerts,
     filters,
@@ -52,5 +85,7 @@ export const useAlertsStore = defineStore('alerts', () => {
     updateFilters,
     resolveAlert,
     ignoreAlert,
+    createAlert,
+    resolveLatestActiveByType,
   }
 })

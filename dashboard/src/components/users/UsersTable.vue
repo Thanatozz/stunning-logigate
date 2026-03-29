@@ -11,6 +11,7 @@ defineProps<{
 const emit = defineEmits<{
   setRole: [id: string, role: UserAdminRow['role']]
   toggleStatus: [id: string]
+  remove: [id: string]
 }>()
 
 function toUser(row: object) {
@@ -57,13 +58,22 @@ function onRoleChange(id: string, event: Event) {
       </template>
 
       <template #cell-actions="{ row }">
-        <button
-          type="button"
-          class="rounded-lg border border-line bg-white px-2.5 py-1.5 text-xs font-medium transition hover:bg-slate-50"
-          @click="emit('toggleStatus', toUser(row).id)"
-        >
-          {{ toUser(row).status === 'activo' ? 'Suspender' : 'Reactivar' }}
-        </button>
+        <div class="flex flex-wrap gap-2">
+          <button
+            type="button"
+            class="rounded-lg border border-line bg-white px-2.5 py-1.5 text-xs font-medium transition hover:bg-slate-50"
+            @click="emit('toggleStatus', toUser(row).id)"
+          >
+            {{ toUser(row).status === 'activo' ? 'Suspender' : 'Reactivar' }}
+          </button>
+          <button
+            type="button"
+            class="rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-700 transition hover:bg-red-100"
+            @click="emit('remove', toUser(row).id)"
+          >
+            Eliminar
+          </button>
+        </div>
       </template>
     </DataTable>
   </section>

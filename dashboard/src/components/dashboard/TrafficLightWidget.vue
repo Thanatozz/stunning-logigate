@@ -20,16 +20,16 @@ const levels = {
     <div class="mt-4 flex items-center gap-5">
       <div class="space-y-2">
         <div
-          class="h-5 w-5 rounded-full bg-slate-200"
-          :class="props.level === 'bajo' ? levels.bajo.color : 'bg-slate-200'"
+          class="h-5 w-5 rounded-full bg-line"
+          :class="props.level === 'bajo' ? levels.bajo.color : 'bg-line'"
         />
         <div
-          class="h-5 w-5 rounded-full bg-slate-200"
-          :class="props.level === 'medio' ? levels.medio.color : 'bg-slate-200'"
+          class="h-5 w-5 rounded-full bg-line"
+          :class="props.level === 'medio' ? levels.medio.color : 'bg-line'"
         />
         <div
-          class="h-5 w-5 rounded-full bg-slate-200"
-          :class="props.level === 'alto' ? levels.alto.color : 'bg-slate-200'"
+          class="h-5 w-5 rounded-full bg-line"
+          :class="props.level === 'alto' ? levels.alto.color : 'bg-line'"
         />
       </div>
       <div>

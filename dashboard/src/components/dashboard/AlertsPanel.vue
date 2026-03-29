@@ -18,7 +18,7 @@ defineProps<{
       <article
         v-for="alert in alerts"
         :key="alert.id"
-        class="rounded-xl border border-line bg-slate-50 p-3"
+        class="panel-soft p-3"
       >
         <div class="flex flex-wrap items-center gap-2">
           <SeverityBadge :severity="alert.severity" />

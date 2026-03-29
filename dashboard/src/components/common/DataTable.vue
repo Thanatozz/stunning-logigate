@@ -31,9 +31,9 @@ function readRowKey(row: DataTableRow) {
 
 <template>
   <div v-if="!isMobileTable" class="overflow-auto rounded-xl border border-line">
-    <table class="min-w-full border-collapse bg-white text-left text-sm">
+    <table class="min-w-full border-collapse bg-panel text-left text-sm text-ink">
       <thead>
-        <tr class="bg-slate-50">
+        <tr class="bg-surface-elevated">
           <th
             v-for="column in props.columns"
             :key="column.key"
@@ -59,7 +59,7 @@ function readRowKey(row: DataTableRow) {
     <article
       v-for="row in safeRows"
       :key="readRowKey(row)"
-      class="rounded-xl border border-line bg-white p-3"
+      class="rounded-xl border border-line bg-panel p-3"
     >
       <div v-for="column in props.columns" :key="column.key" class="mb-2 last:mb-0">
         <p class="text-xs font-medium uppercase tracking-wide text-muted">{{ column.label }}</p>

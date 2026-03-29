@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import AppSectionHeader from '@/components/common/AppSectionHeader.vue'
-import EmptyState from '@/components/common/EmptyState.vue'
+import NoResultsState from '@/components/common/NoResultsState.vue'
 import HistoryFilters from '@/components/history/HistoryFilters.vue'
 import RecordsTable from '@/components/history/RecordsTable.vue'
 import { useHistoryStore } from '@/stores/history.store'
@@ -115,7 +115,7 @@ function prevPage() {
       :point-options="pointOptions"
     />
 
-    <EmptyState
+    <NoResultsState
       v-if="!filteredRecords.length"
       title="Sin resultados"
       message="No existen registros para los filtros seleccionados."

@@ -14,7 +14,7 @@ const emit = defineEmits<{
       v-for="action in actions"
       :key="action.value"
       type="button"
-      class="rounded-lg border border-line bg-white px-2.5 py-1.5 text-xs font-medium text-ink transition hover:bg-slate-50"
+      class="btn-secondary px-2.5 py-1.5 text-xs font-medium"
       @click="emit('select', action.value)"
     >
       {{ action.label }}

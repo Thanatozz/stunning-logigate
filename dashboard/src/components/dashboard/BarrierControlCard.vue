@@ -46,7 +46,7 @@ const modeOptions: Array<{ label: string; value: BarrierMode }> = [
         :class="
           props.barrier.mode === option.value
             ? 'border-accent bg-accent text-white'
-            : 'border-line bg-white text-ink hover:bg-slate-50'
+            : 'btn-secondary'
         "
         :disabled="!props.canControl"
         @click="emit('mode', option.value)"
@@ -66,7 +66,7 @@ const modeOptions: Array<{ label: string; value: BarrierMode }> = [
       </button>
       <button
         type="button"
-        class="rounded-lg border border-line bg-white px-3 py-2 text-sm font-medium text-ink disabled:cursor-not-allowed disabled:opacity-50"
+        class="btn-secondary px-3 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50"
         :disabled="!props.canControl"
         @click="emit('close')"
       >

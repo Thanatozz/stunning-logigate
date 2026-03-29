@@ -1,11 +1,18 @@
 ﻿<script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { Bars3Icon, BellIcon, ArrowRightOnRectangleIcon } from '@heroicons/vue/24/outline'
+import {
+  Bars3Icon,
+  BellIcon,
+  ArrowRightOnRectangleIcon,
+  MoonIcon,
+  SunIcon,
+} from '@heroicons/vue/24/outline'
 import { storeToRefs } from 'pinia'
 import { useAlertsStore } from '@/stores/alerts.store'
 import { useAuthStore } from '@/stores/auth.store'
 import { useDevicesStore } from '@/stores/devices.store'
+import { useThemeStore } from '@/stores/theme.store'
 
 const emit = defineEmits<{
   menu: []
@@ -15,7 +22,9 @@ const router = useRouter()
 const authStore = useAuthStore()
 const alertsStore = useAlertsStore()
 const devicesStore = useDevicesStore()
+const themeStore = useThemeStore()
 const { session } = storeToRefs(authStore)
+const { isDark, label: themeLabel } = storeToRefs(themeStore)
 
 const roleLabel = {
   admin: 'Administrador',
@@ -49,10 +58,14 @@ function logout() {
   authStore.logout()
   router.push({ name: 'login' })
 }
+
+function toggleTheme() {
+  themeStore.toggleMode()
+}
 </script>
 
 <template>
-  <header class="sticky top-0 z-20 border-b border-line bg-white/90 backdrop-blur">
+  <header class="sticky top-0 z-20 border-b border-line bg-white/90 text-ink backdrop-blur">
     <div class="flex items-center justify-between gap-3 px-4 py-3 sm:px-6">
       <div class="flex items-center gap-3">
         <button
@@ -79,6 +92,17 @@ function logout() {
           >
             {{ alertsStore.activeAlerts.length }}
           </span>
+        </button>
+
+        <button
+          type="button"
+          class="rounded-lg border border-line p-2 text-muted transition hover:text-ink"
+          :aria-label="isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
+          :title="themeLabel"
+          @click="toggleTheme"
+        >
+          <SunIcon v-if="isDark" class="h-5 w-5" />
+          <MoonIcon v-else class="h-5 w-5" />
         </button>
 
         <div class="hidden text-right sm:block">

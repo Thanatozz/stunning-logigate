@@ -1,25 +1,27 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: 'class',
   content: ['./index.html', './src/**/*.{vue,ts,js,tsx,jsx}'],
   theme: {
     extend: {
       colors: {
-        surface: '#f3f6fb',
-        panel: '#ffffff',
-        line: '#d9e3f3',
-        ink: '#10243d',
-        muted: '#5f728a',
-        accent: '#0f5bff',
-        success: '#1d9d5f',
-        warning: '#d89a00',
-        danger: '#d43f52',
+        surface: 'rgb(var(--color-surface) / <alpha-value>)',
+        'surface-elevated': 'rgb(var(--color-surface-elevated) / <alpha-value>)',
+        panel: 'rgb(var(--color-panel) / <alpha-value>)',
+        line: 'rgb(var(--color-line) / <alpha-value>)',
+        ink: 'rgb(var(--color-ink) / <alpha-value>)',
+        muted: 'rgb(var(--color-muted) / <alpha-value>)',
+        accent: 'rgb(var(--color-accent) / <alpha-value>)',
+        success: 'rgb(var(--color-success) / <alpha-value>)',
+        warning: 'rgb(var(--color-warning) / <alpha-value>)',
+        danger: 'rgb(var(--color-danger) / <alpha-value>)',
       },
       fontFamily: {
         heading: ['"Sora"', 'sans-serif'],
         body: ['"IBM Plex Sans"', 'sans-serif'],
       },
       boxShadow: {
-        soft: '0 8px 24px rgba(16, 36, 61, 0.08)',
+        soft: 'var(--shadow-soft)',
       },
       borderRadius: {
         card: '1rem',
