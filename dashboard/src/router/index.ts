@@ -29,7 +29,19 @@ const router = createRouter({
           path: '',
           name: 'dashboard',
           component: () => import('@/views/DashboardView.vue'),
-          meta: { requiresAuth: true, title: 'Dashboard' },
+          meta: { requiresAuth: true, title: 'Dashboard · Resumen' },
+        },
+        {
+          path: 'dashboard/access',
+          name: 'dashboard-access',
+          component: () => import('@/views/DashboardAccessView.vue'),
+          meta: { requiresAuth: true, title: 'Dashboard · Accesos' },
+        },
+        {
+          path: 'dashboard/control',
+          name: 'dashboard-control',
+          component: () => import('@/views/DashboardControlView.vue'),
+          meta: { requiresAuth: true, title: 'Dashboard · Control IoT' },
         },
         {
           path: 'history',

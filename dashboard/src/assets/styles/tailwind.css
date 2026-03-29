@@ -8,35 +8,35 @@
   :root {
     color-scheme: light;
 
-    --color-surface: 243 246 251;
+    --color-surface: 246 247 249;
     --color-panel: 255 255 255;
-    --color-line: 217 227 243;
-    --color-ink: 16 36 61;
-    --color-muted: 95 114 138;
-    --color-accent: 15 91 255;
-    --color-success: 29 157 95;
-    --color-warning: 216 154 0;
-    --color-danger: 212 63 82;
+    --color-line: 224 229 238;
+    --color-ink: 23 35 54;
+    --color-muted: 96 112 137;
+    --color-accent: 46 94 184;
+    --color-success: 41 142 103;
+    --color-warning: 194 139 34;
+    --color-danger: 194 86 98;
 
-    --color-surface-elevated: 248 250 252;
-    --shadow-soft: 0 8px 24px rgba(16, 36, 61, 0.08);
+    --color-surface-elevated: 250 251 253;
+    --shadow-soft: 0 8px 20px rgba(15, 23, 42, 0.06);
   }
 
   .dark {
     color-scheme: dark;
 
-    --color-surface: 9 15 27;
-    --color-panel: 20 31 48;
-    --color-line: 71 91 121;
-    --color-ink: 241 246 255;
-    --color-muted: 188 202 224;
-    --color-accent: 96 139 255;
-    --color-success: 52 211 153;
-    --color-warning: 251 191 36;
-    --color-danger: 248 113 113;
+    --color-surface: 12 14 19;
+    --color-panel: 22 27 36;
+    --color-line: 63 74 92;
+    --color-ink: 230 236 246;
+    --color-muted: 157 169 188;
+    --color-accent: 102 132 186;
+    --color-success: 74 189 138;
+    --color-warning: 221 170 63;
+    --color-danger: 223 107 116;
 
-    --color-surface-elevated: 27 41 62;
-    --shadow-soft: 0 10px 28px rgba(0, 0, 0, 0.35);
+    --color-surface-elevated: 28 34 45;
+    --shadow-soft: 0 8px 20px rgba(0, 0, 0, 0.38);
   }
 
   * {
@@ -52,15 +52,15 @@
   body {
     @apply m-0 bg-surface text-ink font-body antialiased;
     background-image:
-      radial-gradient(circle at 20% 15%, rgba(15, 91, 255, 0.08), transparent 34%),
-      radial-gradient(circle at 80% 0%, rgba(29, 157, 95, 0.07), transparent 40%);
+      radial-gradient(circle at 20% 15%, rgba(46, 94, 184, 0.05), transparent 34%),
+      radial-gradient(circle at 80% 0%, rgba(41, 142, 103, 0.04), transparent 40%);
     transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease;
   }
 
   .dark body {
     background-image:
-      radial-gradient(circle at 15% 10%, rgba(96, 139, 255, 0.15), transparent 32%),
-      radial-gradient(circle at 85% 0%, rgba(52, 211, 153, 0.1), transparent 38%);
+      radial-gradient(circle at 15% 10%, rgba(102, 132, 186, 0.08), transparent 32%),
+      radial-gradient(circle at 85% 0%, rgba(74, 189, 138, 0.06), transparent 38%);
   }
 
   h1,
@@ -73,19 +73,19 @@
 
 @layer components {
   .card-panel {
-    @apply rounded-card border border-line bg-panel shadow-soft;
+    @apply rounded-card border border-line/65 bg-panel shadow-soft;
   }
 
   .panel-soft {
-    @apply rounded-xl border border-line bg-surface-elevated;
+    @apply rounded-xl border border-line/55 bg-surface-elevated;
   }
 
   .btn-secondary {
-    @apply rounded-lg border border-line bg-panel text-ink transition hover:bg-line/20;
+    @apply rounded-lg border border-line/75 bg-panel text-ink transition hover:bg-line/15;
   }
 
   .badge-neutral {
-    @apply bg-line/45 text-ink;
+    @apply bg-line/40 text-muted;
   }
 
   .badge-success {
@@ -128,19 +128,19 @@
   }
 
   .dark .bg-slate-100 {
-    background-color: rgb(var(--color-line) / 0.35) !important;
+    background-color: rgb(var(--color-line) / 0.28) !important;
   }
 
   .dark .bg-slate-200 {
-    background-color: rgb(var(--color-line) / 0.5) !important;
+    background-color: rgb(var(--color-line) / 0.42) !important;
   }
 
   .dark .hover\:bg-slate-50:hover {
-    background-color: rgb(var(--color-line) / 0.22) !important;
+    background-color: rgb(var(--color-line) / 0.18) !important;
   }
 
   .dark .hover\:bg-slate-100:hover {
-    background-color: rgb(var(--color-line) / 0.28) !important;
+    background-color: rgb(var(--color-line) / 0.22) !important;
   }
 
   .dark .text-slate-700 {
@@ -234,6 +234,6 @@
   }
 
   .dark .bg-slate-900\/45 {
-    background-color: rgb(2 6 23 / 0.55) !important;
+    background-color: rgb(4 8 14 / 0.48) !important;
   }
 }

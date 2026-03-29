@@ -65,7 +65,7 @@ function toggleTheme() {
 </script>
 
 <template>
-  <header class="sticky top-0 z-20 border-b border-line bg-white/90 text-ink backdrop-blur">
+  <header class="sticky top-0 z-20 border-b border-line/70 bg-panel/90 text-ink backdrop-blur">
     <div class="flex items-center justify-between gap-3 px-4 py-3 sm:px-6">
       <div class="flex items-center gap-3">
         <button

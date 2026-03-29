@@ -27,7 +27,9 @@ const devicesStore = useDevicesStore()
 const { currentRole } = storeToRefs(authStore)
 
 const items = computed(() => [
-  { label: 'Dashboard', to: '/', icon: HomeIcon },
+  { label: 'Resumen', to: '/', icon: HomeIcon },
+  { label: 'Accesos', to: '/dashboard/access', icon: TruckIcon },
+  { label: 'Control IoT', to: '/dashboard/control', icon: ShieldCheckIcon },
   { label: 'Historial', to: '/history', icon: ClockIcon },
   { label: 'Reportes', to: '/reports', icon: ChartBarIcon },
   { label: 'Alertas', to: '/alerts', icon: BellAlertIcon, badge: alertsStore.activeAlerts.length },
@@ -60,7 +62,7 @@ const onlineText = computed(
         v-show="!item.adminOnly || currentRole === 'admin'"
         :to="item.to"
         class="flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium text-muted transition"
-        :class="route.path === item.to ? 'bg-accent text-white' : 'hover:bg-line/20 hover:text-ink'"
+        :class="route.path === item.to ? 'border border-accent/35 bg-accent/18 text-ink' : 'hover:bg-line/20 hover:text-ink'"
         @click="emit('navigate')"
       >
         <span class="flex items-center gap-2">
