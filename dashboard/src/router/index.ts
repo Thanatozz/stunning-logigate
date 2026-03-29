@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router'
+﻿import { createRouter, createWebHistory } from 'vue-router'
 import MainLayout from '@/layouts/MainLayout.vue'
 import { useAuthStore } from '@/stores/auth.store'
 import type { Role } from '@/types/domain'
@@ -53,13 +53,13 @@ const router = createRouter({
           path: 'vehicles',
           name: 'vehicles',
           component: () => import('@/views/VehiclesView.vue'),
-          meta: { requiresAuth: true, title: 'Vehículos' },
+          meta: { requiresAuth: true, title: 'Vehiculos' },
         },
         {
           path: 'settings',
           name: 'settings',
           component: () => import('@/views/SettingsView.vue'),
-          meta: { requiresAuth: true, rolesAllowed: ['admin'], title: 'Configuración' },
+          meta: { requiresAuth: true, rolesAllowed: ['admin'], title: 'Configuracion' },
         },
         {
           path: 'users',

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 const props = defineProps<{
   value: string
 }>()
@@ -18,6 +18,8 @@ const classByStatus: Record<string, string> = {
   abierta: 'bg-green-100 text-green-700',
   cerrada: 'bg-slate-200 text-slate-700',
   en_transicion: 'bg-amber-100 text-amber-700',
+  ingreso: 'bg-sky-100 text-sky-700',
+  salida: 'bg-violet-100 text-violet-700',
 }
 
 const labelByStatus: Record<string, string> = {
@@ -28,13 +30,15 @@ const labelByStatus: Record<string, string> = {
   resuelta: 'Resuelta',
   ignorada: 'Ignorada',
   autorizado: 'Autorizado',
-  observacion: 'Observación',
+  observacion: 'Observacion',
   bloqueado: 'Bloqueado',
   activo: 'Activo',
   suspendido: 'Suspendido',
   abierta: 'Abierta',
   cerrada: 'Cerrada',
-  en_transicion: 'En transición',
+  en_transicion: 'En transicion',
+  ingreso: 'Ingreso',
+  salida: 'Salida',
 }
 </script>
 
