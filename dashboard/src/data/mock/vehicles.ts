@@ -1,0 +1,58 @@
+import type { Vehicle } from '@/types/domain'
+
+export const mockVehicles: Vehicle[] = [
+  {
+    plate: 'AB-1234',
+    company: 'Transportes Andes',
+    cargoType: 'Materia prima',
+    category: 'carga_pesada',
+    status: 'autorizado',
+    active: true,
+    createdAt: '2026-03-01T09:10:00-03:00',
+  },
+  {
+    plate: 'CD-5678',
+    company: 'Logística Sur',
+    cargoType: 'Producto terminado',
+    category: 'carga_liviana',
+    status: 'autorizado',
+    active: true,
+    createdAt: '2026-03-03T10:20:00-03:00',
+  },
+  {
+    plate: 'EF-9012',
+    company: 'Frío Express',
+    cargoType: 'Carga refrigerada',
+    category: 'refrigerado',
+    status: 'observacion',
+    active: true,
+    createdAt: '2026-03-07T13:45:00-03:00',
+  },
+  {
+    plate: 'GH-3456',
+    company: 'Norte Industrial',
+    cargoType: 'Insumos químicos',
+    category: 'especial',
+    status: 'bloqueado',
+    active: false,
+    createdAt: '2026-03-11T11:02:00-03:00',
+  },
+  {
+    plate: 'JK-7890',
+    company: 'Trans Cordillera',
+    cargoType: 'Material de empaque',
+    category: 'carga_liviana',
+    status: 'autorizado',
+    active: true,
+    createdAt: '2026-03-16T08:26:00-03:00',
+  },
+  {
+    plate: 'LM-2468',
+    company: 'Carga Metropolitana',
+    cargoType: 'Pallets',
+    category: 'carga_pesada',
+    status: 'autorizado',
+    active: true,
+    createdAt: '2026-03-19T16:19:00-03:00',
+  },
+]

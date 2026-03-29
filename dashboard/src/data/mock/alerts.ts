@@ -1,0 +1,52 @@
+import type { Alert } from '@/types/domain'
+
+export const mockAlerts: Alert[] = [
+  {
+    id: 'al-001',
+    type: 'permanencia_excesiva',
+    description: 'Camión AB-1234 supera 8 horas en planta.',
+    severity: 'warning',
+    status: 'activa',
+    timestamp: '2026-03-29T09:22:00-03:00',
+    relatedPlate: 'AB-1234',
+    source: 'Motor de alertas',
+  },
+  {
+    id: 'al-002',
+    type: 'dispositivo_offline',
+    description: 'ESP32-CAM Portón Sur sin conexión desde hace 4 minutos.',
+    severity: 'critical',
+    status: 'activa',
+    timestamp: '2026-03-29T09:30:00-03:00',
+    source: 'Monitor de dispositivos',
+  },
+  {
+    id: 'al-003',
+    type: 'inconsistencia',
+    description: 'Salida detectada para LM-2468 sin ingreso activo.',
+    severity: 'warning',
+    status: 'ignorada',
+    timestamp: '2026-03-29T08:10:00-03:00',
+    relatedPlate: 'LM-2468',
+    source: 'Validador de eventos',
+  },
+  {
+    id: 'al-004',
+    type: 'exceso_camiones',
+    description: 'Nivel de ocupación en estado rojo (18/20).',
+    severity: 'critical',
+    status: 'resuelta',
+    timestamp: '2026-03-28T18:05:00-03:00',
+    source: 'Motor de alertas',
+  },
+  {
+    id: 'al-005',
+    type: 'vehiculo_no_autorizado',
+    description: 'Patente QR-1122 no está registrada en flota.',
+    severity: 'info',
+    status: 'activa',
+    timestamp: '2026-03-29T09:02:00-03:00',
+    relatedPlate: 'QR-1122',
+    source: 'Filtro OCR',
+  },
+]
