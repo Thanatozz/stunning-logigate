@@ -18,7 +18,7 @@ export interface AuditLogRow {
 export const mockUserAdminRows: UserAdminRow[] = [
   {
     id: 'usr-001',
-    name: 'Carla Muñoz',
+    name: 'Rafael Sotomayor',
     email: 'admin@planta.cl',
     role: 'admin',
     status: 'activo',
@@ -26,7 +26,7 @@ export const mockUserAdminRows: UserAdminRow[] = [
   },
   {
     id: 'usr-002',
-    name: 'Javier Soto',
+    name: 'Diego Avendaño',
     email: 'supervisor@planta.cl',
     role: 'supervisor',
     status: 'activo',
@@ -34,8 +34,8 @@ export const mockUserAdminRows: UserAdminRow[] = [
   },
   {
     id: 'usr-003',
-    name: 'Paula Reyes',
-    email: 'paula.reyes@planta.cl',
+    name: 'Tomas Borquez',
+    email: 'tomas.borquez@planta.cl',
     role: 'supervisor',
     status: 'suspendido',
     lastAccess: '2026-03-21T10:14:00-03:00',
@@ -46,21 +46,21 @@ export const mockAuditRows: AuditLogRow[] = [
   {
     id: 'aud-001',
     action: 'Cambio de modo de barrera',
-    actor: 'Carla Muñoz',
+    actor: 'Rafael Sotomayor',
     target: 'Portón Norte',
     timestamp: '2026-03-29T08:59:00-03:00',
   },
   {
     id: 'aud-002',
     action: 'Resolución de alerta',
-    actor: 'Javier Soto',
+    actor: 'Diego Avendaño',
     target: 'AL-002',
     timestamp: '2026-03-29T09:10:00-03:00',
   },
   {
     id: 'aud-003',
     action: 'Alta de vehículo',
-    actor: 'Carla Muñoz',
+    actor: 'Rafael Sotomayor',
     target: 'Patente LM-2468',
     timestamp: '2026-03-28T16:42:00-03:00',
   },

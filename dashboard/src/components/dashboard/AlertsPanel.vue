@@ -14,7 +14,7 @@ defineProps<{
   <section class="card-panel p-4 sm:p-5">
     <h3 class="mb-3 text-sm font-semibold">Alertas activas</h3>
 
-    <div v-if="alerts.length" class="space-y-3">
+    <div v-if="alerts.length" class="max-h-80 space-y-3 overflow-y-auto pr-1">
       <article
         v-for="alert in alerts"
         :key="alert.id"

@@ -6,8 +6,8 @@ import type { BarrierMode, BarrierState, BarrierStatus } from '@/types/domain'
 export const useBarrierStore = defineStore('barrier', () => {
   const barrier = ref<BarrierState>({ ...mockBarrierState })
   const commandLog = ref<string[]>([
-    '09:15 Apertura manual remota por Javier Soto',
-    '08:59 Cambio a modo automático por Carla Muñoz',
+    '09:15 Apertura manual remota por Diego Avendaño',
+    '08:59 Cambio a modo automático por Rafael Sotomayor',
   ])
 
   const isOpen = computed(() => barrier.value.status === 'abierta')

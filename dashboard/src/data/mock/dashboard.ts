@@ -96,7 +96,7 @@ export const mockRecentActivity: RecentActivityItem[] = [
   {
     id: 'act-003',
     title: 'Apertura manual',
-    detail: 'Barrera Norte abierta por Supervisor Javier Soto',
+    detail: 'Barrera Norte abierta por Supervisor Diego Avendaño',
     timestamp: '2026-03-29T09:15:00-03:00',
     level: 'info',
   },

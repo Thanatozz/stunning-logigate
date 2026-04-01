@@ -62,6 +62,11 @@ function logout() {
 function toggleTheme() {
   themeStore.toggleMode()
 }
+
+function goToAlerts() {
+  if (router.currentRoute.value.name === 'alerts') return
+  router.push({ name: 'alerts' })
+}
 </script>
 
 <template>
@@ -84,7 +89,13 @@ function toggleTheme() {
       </div>
 
       <div class="flex items-center gap-2 sm:gap-3">
-        <button class="relative rounded-lg border border-line p-2 text-muted" type="button" aria-label="Alertas">
+        <button
+          class="relative rounded-lg border border-line p-2 text-muted transition hover:text-ink"
+          type="button"
+          aria-label="Alertas"
+          title="Ver alertas"
+          @click="goToAlerts"
+        >
           <BellIcon class="h-5 w-5" />
           <span
             v-if="alertsStore.activeAlerts.length"

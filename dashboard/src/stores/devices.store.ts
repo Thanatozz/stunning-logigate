@@ -3,6 +3,15 @@ import { defineStore } from 'pinia'
 import { mockDevices } from '@/data/mock/devices'
 import type { Device, DeviceStatus } from '@/types/domain'
 
+export interface CreateDevicePayload {
+  name: string
+  type: Device['type']
+  accessPoint: string
+  status?: DeviceStatus
+  signal?: number
+  firmware?: string
+}
+
 export const useDevicesStore = defineStore('devices', () => {
   const devices = ref<Device[]>([...mockDevices])
 
@@ -42,6 +51,27 @@ export const useDevicesStore = defineStore('devices', () => {
     return matches[Math.floor(Math.random() * matches.length)]
   }
 
+  function addDevice(payload: CreateDevicePayload) {
+    const status = payload.status ?? 'online'
+    const signal =
+      payload.signal ??
+      (status === 'offline' ? 0 : status === 'degradado' ? 55 : 88)
+
+    const next: Device = {
+      id: `DEV-${Date.now()}`,
+      name: payload.name.trim(),
+      type: payload.type,
+      accessPoint: payload.accessPoint.trim(),
+      status,
+      signal,
+      firmware: (payload.firmware || 'v1.0.0').trim(),
+      lastSeen: new Date().toISOString(),
+    }
+
+    devices.value.unshift(next)
+    return next.id
+  }
+
   return {
     devices,
     connectedCount,
@@ -50,5 +80,6 @@ export const useDevicesStore = defineStore('devices', () => {
     setDeviceStatus,
     setDeviceStatusByAccessPoint,
     getRandomDeviceByStatus,
+    addDevice,
   }
 })
