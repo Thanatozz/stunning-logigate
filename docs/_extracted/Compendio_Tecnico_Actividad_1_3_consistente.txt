@@ -1,0 +1,254 @@
+INTEGRACIÓN DE COMPETENCIAS III
+Compendio Técnico del Prototipo
+Actividad 1.3: Avance #2
+Sistema IoT de Monitoreo de Acceso Vehicular
+mediante Reconocimiento Automático de Patentes
+Integrantes:
+[Nombre Integrante 1]
+[Nombre Integrante 2]
+[Nombre Integrante 3]
+[Nombre Integrante 4]
+[Nombre Integrante 5]
+Docente: [Nombre Docente]
+Fecha: [DD/MM/AAAA]
+1. Introducción
+El presente documento constituye el compendio técnico del prototipo correspondiente al Avance #2 de la asignatura Integración de Competencias III. En él se detalla el diseño conceptual de la solución tecnológica propuesta para el monitoreo automatizado del ingreso y salida de camiones en una planta manufacturera, utilizando tecnologías de la Industria 4.0.
+La solución se basa en un sistema IoT que emplea un módulo ESP32-CAM con cámara OV2640 para capturar imágenes de las patentes vehiculares, un servicio de reconocimiento óptico de caracteres (OCR) en la nube para identificar automáticamente los vehículos, y una plataforma Firebase para el almacenamiento, autenticación y visualización de datos en tiempo real a través de un dashboard web desarrollado con Vue.js 3.
+Este compendio aborda tres dimensiones clave del diseño: la arquitectura del sistema (hardware, software y comunicaciones), la selección y justificación de las tecnologías utilizadas, y la propuesta de interfaz de usuario para la visualización de datos críticos.
+2. Diagrama de Arquitectura del Sistema
+La arquitectura del sistema se organiza en cinco capas claramente diferenciadas, cada una con responsabilidades específicas. Esta separación por capas permite un desarrollo modular, facilita el mantenimiento y garantiza la escalabilidad de la solución.
+[Insertar aquí el diagrama de arquitectura general del sistema — ver diagrama generado en clase]
+2.1 Capa Física (Portón de Planta)
+Esta capa comprende los componentes de hardware instalados físicamente en el punto de acceso de la planta. Su función es detectar la llegada de un vehículo, capturar la imagen de su patente e iluminar la zona de captura.
+Sensor infrarrojo (IR): Sensor de obstáculo/barrera conectado al GPIO 13 y GPIO 14 del ESP32-CAM. Detecta la presencia de un vehículo en el portón mediante la interrupción de un haz infrarrojo. Cuando detecta un obstáculo, envía una señal digital (HIGH) al microcontrolador, activando la secuencia de captura.
+ESP32-CAM (AI-Thinker): Módulo de desarrollo que integra un microcontrolador ESP32 de doble núcleo a 240 MHz, una cámara OV2640 de 2 megapíxeles con compresión JPEG nativa, antena WiFi 2.4 GHz integrada, flash LED incorporado y 4 MB de memoria PSRAM. Este módulo es el cerebro del sistema IoT y se encarga de la captura de imagen, el procesamiento inicial y la comunicación con la nube.
+Flash LED: LED de alta luminosidad incorporado en la placa ESP32-CAM. Se activa automáticamente por GPIO 4 al momento de la captura para garantizar la legibilidad de la patente en condiciones de baja iluminación.
+2.2 Capa de Comunicación
+La comunicación entre los dispositivos físicos y los servicios en la nube se realiza mediante WiFi 2.4 GHz, utilizando el protocolo HTTPS (puerto 443) con cifrado SSL/TLS. Esto garantiza que los datos transmitidos (imágenes y registros) estén protegidos durante la transferencia.
+El ESP32-CAM se conecta a la red WiFi local de la planta y envía las imágenes mediante solicitudes HTTP POST a la API de Plate Recognizer, y los datos de registro mediante solicitudes HTTPS a Firebase Realtime Database. La comunicación es asíncrona y no bloqueante, permitiendo que el sistema continúe detectando vehículos mientras se procesan las solicitudes anteriores.
+2.3 Capa de Servicios en la Nube
+Esta capa comprende los servicios cloud que procesan, almacenan y protegen los datos del sistema:
+Plate Recognizer API: Servicio especializado de reconocimiento óptico de caracteres (OCR) para patentes vehiculares. Recibe la imagen JPEG capturada por el ESP32-CAM, procesa el reconocimiento de la patente utilizando modelos de inteligencia artificial entrenados para formatos de patentes de múltiples países (incluido Chile), y retorna el texto de la patente con un índice de confianza. Plan gratuito: 2.500 lecturas/mes.
+Firebase Realtime Database: Base de datos NoSQL en tiempo real de Google. Almacena los registros de acceso vehicular (patente, timestamp, tipo de evento, tiempo de permanencia) y los datos de los camiones registrados. Su característica principal es la sincronización en tiempo real mediante WebSocket, lo que permite que el dashboard refleje los cambios instantáneamente sin necesidad de recargar la página.
+Firebase Authentication: Servicio de autenticación de usuarios que gestiona el registro, inicio de sesión y control de acceso al dashboard. Permite implementar dos roles diferenciados (Administrador y Supervisor) mediante custom claims, asegurando que solo usuarios autorizados accedan al sistema.
+2.4 Capa de Lógica de Negocio
+La lógica de negocio se implementa tanto en el ESP32-CAM (procesamiento local) como en el dashboard web (reglas del lado del cliente):
+Motor de alertas: Evalúa en tiempo real las condiciones de la planta contra umbrales configurables. Genera alertas cuando se supera el número máximo de camiones simultáneos, cuando un vehículo permanece más tiempo del permitido, o cuando un dispositivo IoT pierde conexión.
+Módulo de reportes: Genera resúmenes diarios y por período con estadísticas de operación (total de ingresos/salidas, tiempo promedio de permanencia, horas pico) y permite su exportación en formato CSV o PDF.
+Gestión de vehículos: CRUD completo de camiones registrados en el sistema, permitiendo asociar patentes con empresas transportistas, tipos de carga y categorías vehiculares.
+2.5 Capa de Presentación
+El dashboard web se desarrolla con Vue.js 3 como framework reactivo, utilizando vue-chartjs (wrapper de Chart.js) para gráficos interactivos y el SDK de Firebase para la conexión en tiempo real con la base de datos. Vue Router gestiona la navegación entre pantallas. La aplicación se despliega en Firebase Hosting, lo que permite acceso remoto desde cualquier dispositivo con navegador web. El diseño es responsive, adaptándose a pantallas de escritorio y dispositivos móviles.
+2.6 Diagrama de Hardware IoT
+[Insertar aquí el diagrama de hardware IoT con el detalle de conexiones del ESP32-CAM — ver diagrama generado en clase]
+3. Selección y Justificación de Tecnologías
+A continuación se presenta la selección de cada componente tecnológico del sistema, acompañado de su justificación considerando los criterios de costo, compatibilidad, escalabilidad y facilidad de uso solicitados en la pauta de actividad.
+3.1 Microcontrolador: ESP32-CAM (AI-Thinker)
+Justificación: Se seleccionó el ESP32-CAM porque integra en una sola placa todos los componentes necesarios para el sistema: microcontrolador de alto rendimiento, cámara con compresión JPEG nativa, WiFi, flash LED y pines GPIO disponibles. Esto reduce la complejidad del cableado, el costo total y los puntos de falla del hardware. El soporte nativo de JPEG es crítico para el proyecto, ya que permite enviar imágenes comprimidas directamente a la API de reconocimiento de patentes sin necesidad de procesamiento adicional en el microcontrolador.
+3.2 Sensor de Detección: Infrarrojo de Obstáculo
+Justificación: Se seleccionó el sensor infrarrojo de obstáculo porque cumple la función específica requerida (detectar la presencia de un vehículo) con la menor complejidad posible. Su salida digital directa permite una conexión simple al GPIO del ESP32 sin necesidad de cálculos intermedios. A diferencia del RFID, no requiere intervención del conductor. La identificación del vehículo se delega al sistema de reconocimiento de patentes por cámara, lo que es más innovador y escalable.
+3.3 Reconocimiento de Patentes: Plate Recognizer API
+Justificación: Plate Recognizer fue seleccionado por ser un servicio especializado en el reconocimiento de patentes vehiculares, lo que ofrece una precisión significativamente superior a servicios de OCR general como Google Cloud Vision. Su modelo de IA está entrenado específicamente para formatos de patentes de múltiples países, incluido Chile, eliminando la necesidad de post-procesamiento. Además, su plan gratuito de 2.500 lecturas mensuales es el más generoso entre las opciones evaluadas, más que suficiente para un prototipo académico.
+3.4 Plataforma en la Nube: Firebase (Google)
+Justificación: Firebase fue seleccionado porque ofrece un ecosistema completo en una sola plataforma: base de datos en tiempo real con sincronización instantánea vía WebSocket (crítico para el dashboard), autenticación de usuarios con roles (requerido por el sistema), y hosting web gratuito para desplegar el dashboard. ThingSpeak, aunque popular para proyectos IoT básicos, está diseñado para graficar datos de sensores y carece de las funcionalidades de autenticación, roles y dashboard personalizado que el proyecto requiere.
+3.5 Tecnologías del Dashboard Web
+3.6 Protocolo de Comunicación: HTTPS
+La comunicación entre el ESP32-CAM y los servicios en la nube se realiza mediante HTTPS (HTTP sobre TLS/SSL) por el puerto 443. Se eligió HTTPS por sobre MQTT por las siguientes razones:
+•  El ESP32-CAM necesita enviar imágenes JPEG a la API de Plate Recognizer, lo cual requiere solicitudes HTTP POST con cuerpo binario. MQTT no está diseñado para transferencia eficiente de archivos binarios grandes.
+•  Firebase Realtime Database tiene su propia API REST vía HTTPS, lo que simplifica la integración sin necesidad de un broker MQTT intermedio.
+•  El cifrado SSL/TLS está integrado en las librerías del ESP32, lo que garantiza la seguridad de la comunicación sin configuración adicional.
+3.7 Resumen de Costos del Prototipo
+El costo total del prototipo es de aproximadamente $14 USD, lo que equivale a menos de $3 USD por integrante. Todos los servicios de software utilizados ofrecen planes gratuitos suficientes para el desarrollo y demostración del prototipo académico.
+3.8 Visión a Futuro: Escalabilidad a Producción
+Este prototipo valida la viabilidad del concepto utilizando hardware de bajo costo y servicios cloud gratuitos. En una implementación productiva real, se considerarían las siguientes mejoras tecnológicas manteniendo la misma arquitectura base:
+Cámara: Upgrade a OV5640 (5 MP con autofocus) para lectura de patentes a mayor distancia (2-5 metros), o integración de cámaras IP industriales con visión nocturna.
+Sensores: Adición de lectores RFID UHF de largo alcance (860-960 MHz) para identificación redundante sin intervención del conductor, similar a los sistemas de telepeaje.
+Reconocimiento: Modelo de IA on-premise (edge computing) para eliminar la dependencia de APIs externas y reducir la latencia.
+Plataforma: Migración a Firebase Blaze (pago por uso) o a una solución cloud empresarial (AWS IoT Core, Azure IoT Hub) para mayor capacidad y SLA garantizado.
+Integración: Conexión con el ERP de la empresa (SAP, Oracle) para cruzar datos de acceso vehicular con órdenes de compra, despachos y facturación.
+4. Propuesta de Interfaz de Usuario
+A continuación se presenta la propuesta de diseño de las principales pantallas del dashboard web. Los mockups representan la estructura, distribución y funcionalidad de cada vista, y servirán como guía para la implementación en la Actividad 1.4.
+4.1 Pantalla Principal (Dashboard)
+La pantalla principal es la vista que el supervisor verá al ingresar al sistema. Presenta la información crítica de forma inmediata:
+Indicadores superiores (KPIs): Tarjetas con datos clave: camiones actualmente en planta, ingresos del día, salidas del día, y tiempo promedio de permanencia.
+Semáforo de ocupación: Indicador visual tipo semáforo que cambia de color según el nivel de ocupación: verde (bajo), amarillo (medio), rojo (alto). Los umbrales son configurables.
+Gráfico de actividad por hora: Gráfico de barras (Chart.js) que muestra la distribución de ingresos y salidas por hora del día actual, permitiendo identificar horas pico.
+Tabla de camiones en planta: Listado en tiempo real de los vehículos actualmente dentro de la planta, mostrando patente, empresa, hora de ingreso y tiempo acumulado.
+Panel de alertas activas: Sección que muestra las alertas vigentes (exceso de camiones, permanencia prolongada, sensor desconectado) con indicador de severidad.
+[Insertar aquí mockup de la pantalla principal del dashboard — ver boceto adjunto o elaborar en Figma/Canva]
+4.2 Pantalla de Historial de Movimientos
+Esta vista permite consultar y filtrar los registros históricos de acceso vehicular:
+Filtros: Campos de filtrado por rango de fechas (fecha inicio / fecha fin), patente específica, empresa transportista y punto de acceso.
+Tabla de resultados: Tabla paginada con columnas: fecha/hora, patente, empresa, tipo de evento (ingreso/salida), punto de acceso y tiempo de permanencia.
+Exportación: Botones para exportar los resultados filtrados en formato CSV y PDF.
+4.3 Pantalla de Reportes y Estadísticas
+Vista destinada al análisis de datos operativos con gráficos comparativos:
+Reporte diario: Resumen automático del día con total de ingresos, salidas, tiempo promedio de permanencia y hora pico.
+Gráfico de tendencias: Gráfico de líneas que muestra la evolución de ingresos/salidas a lo largo de la semana o mes.
+Comparativo entre períodos: Gráfico de barras agrupadas que permite comparar la actividad de la semana actual vs. la anterior, o del mes actual vs. el anterior.
+4.4 Pantalla de Alertas
+Vista que centraliza la gestión de alertas del sistema:
+Listado de alertas: Tabla con todas las alertas generadas, mostrando: fecha/hora, tipo de alerta, descripción, severidad y estado (activa, resuelta, ignorada).
+Filtros: Filtrado por tipo de alerta, severidad y estado.
+Acciones: Botones para marcar alertas como resueltas o ignoradas.
+4.5 Pantalla de Configuración (Solo Administrador)
+Vista exclusiva para el rol Administrador, donde se configuran los parámetros del sistema:
+Umbrales de alertas: Campos numéricos para definir el máximo de camiones simultáneos y el tiempo máximo de permanencia antes de generar alerta.
+Gestión de puntos de acceso: CRUD de portones registrados en el sistema (nombre, ubicación, estado).
+Gestión de usuarios: Alta y baja de usuarios con asignación de roles (Administrador / Supervisor).
+Intervalo de envío: Configuración del intervalo de captura del ESP32-CAM (cada cuántos segundos escanea).
+4.6 Pantalla de Inicio de Sesión
+Pantalla inicial del sistema que solicita credenciales de acceso:
+Campos: Correo electrónico y contraseña.
+Validación: Firebase Auth valida las credenciales y determina el rol del usuario para mostrar las vistas correspondientes.
+Seguridad: Contraseñas con hash + salt (gestionado por Firebase Auth). Sesión protegida con tokens JWT.
+4.7 Estructura de Navegación
+El dashboard utiliza una barra lateral (sidebar) fija con los siguientes ítems de navegación, visibles según el rol del usuario:
+5. Consideraciones Técnicas
+5.1 Conexión Física del Hardware
+5.2 Flujo de Operación del Sistema
+El sistema opera en un ciclo continuo con los siguientes pasos:
+1. El ESP32-CAM monitorea constantemente el pin GPIO 13 y GPIO 14 esperando una señal HIGH del sensor infrarrojo.
+2. Al detectar presencia (señal HIGH), activa el flash LED (GPIO 4) y captura una imagen JPEG con la cámara OV2640.
+3. La imagen JPEG se envía mediante HTTP POST a la API de Plate Recognizer, que retorna el texto de la patente y un índice de confianza.
+4. Si la confianza es inferior al 80% (persona, objeto sin patente, imagen borrosa), el evento se descarta automáticamente. No se registra nada en Firebase.
+5. Si la confianza es superior al 80%, el sistema verifica si la patente está registrada en la base de datos de vehículos autorizados. Si no está registrada, se registra como “vehículo no autorizado” y se genera una alerta.
+6. Si la patente está registrada, el sistema consulta el estado actual del vehículo en Firebase para determinar la dirección: si el vehículo NO tiene un ingreso activo → se registra como INGRESO. Si el vehículo SÍ tiene un ingreso activo sin salida → se registra como SALIDA.
+7. En modo automático: si el vehículo está autorizado, el ESP32-CAM activa el servo motor (GPIO 12) para abrir la barrera. Si no está autorizado, la barrera permanece cerrada.
+8. El ESP32-CAM construye un objeto JSON con la patente, timestamp, tipo de evento (ingreso/salida), punto de acceso y modo de apertura, y lo envía a Firebase Realtime Database vía HTTPS.
+9. Tras un tiempo configurable (por defecto 10 segundos), el servo motor cierra la barrera automáticamente.
+10. Firebase actualiza la base de datos y notifica automáticamente a todos los dashboards conectados mediante WebSocket.
+11. El dashboard Vue.js refleja el cambio en tiempo real: actualiza los KPIs, el semáforo, la tabla de camiones en planta, el estado de la barrera y evalúa las reglas de alertas.
+12. Si se detecta una inconsistencia (ingreso duplicado de un vehículo ya presente, o salida sin ingreso previo), se genera una alerta de inconsistencia para revisión del administrador.
+13. En cualquier momento, el supervisor puede abrir la barrera manualmente desde el dashboard (modo manual remoto) o mediante el botón físico en el portón (modo manual físico). Ambas acciones se registran en Firebase con el modo y usuario correspondiente.
+5.3 Detección de Dirección por Software (Stateful Event Detection)
+El sistema determina el tipo de evento (ingreso o salida) mediante un algoritmo de estado basado en el registro activo del vehículo en la base de datos. Este enfoque, conocido como “stateful event detection”, elimina la necesidad de hardware adicional (como doble sensor IR para detectar secuencia de activación) para determinar la dirección del vehículo. La coherencia de los datos se garantiza mediante validaciones cruzadas y un motor de alertas que detecta inconsistencias como permanencias excesivas o registros huérfanos.
+5.4 Escalabilidad: Configuraciones de Puntos de Acceso
+La arquitectura soporta tres configuraciones de puntos de acceso sin modificaciones al código base:
+Portón único bidireccional (prototipo): Un solo ESP32-CAM con un sensor IR. La dirección se determina por software consultando el estado del vehículo en Firebase. Es la configuración implementada en el prototipo.
+Múltiples portones con roles fijos: Cada portón tiene un ESP32-CAM con rol fijo (solo entrada o solo salida) configurado por software mediante la variable tipoEvento. Útil cuando la planta tiene portones de entrada y salida físicamente separados.
+Múltiples portones bidireccionales: Cada portón tiene un ESP32-CAM y determina la dirección por software de forma independiente. Un camión puede entrar por el Portón A y salir por el Portón C. La lógica de estado en Firebase funciona sin importar por cuál portón pase el vehículo.
+Para escalar a cualquier configuración, solo se agrega un módulo ESP32-CAM adicional al nuevo portón, se configura el parámetro puntoAcceso, y Firebase recibe los datos automáticamente. El firmware es idéntico para todos los portones.
+5.5 Filtrado de Falsos Positivos
+El sistema implementa un filtrado de falsos positivos en dos capas para evitar registros basura:
+Capa 1 — Filtro por confianza OCR: Si Plate Recognizer no detecta patente en la imagen (persona, animal, objeto sin patente) o la confianza es inferior al umbral configurable (80% por defecto), el evento se descarta sin registrar nada en Firebase. Esto evita consumir almacenamiento con eventos inválidos.
+Capa 2 — Filtro por patente registrada: Si la API detecta una patente pero ésta no está registrada en el sistema de vehículos autorizados (por ejemplo, un auto particular), se registra como “vehículo no autorizado” y se genera una alerta para revisión del administrador. Solo los vehículos previamente registrados generan eventos de ingreso/salida válidos.
+5.6 Control de Barrera Vehicular
+El sistema soporta tres modos de operación de la barrera, seleccionables desde el dashboard por el administrador:
+Modo automático (por defecto): La barrera se abre automáticamente al detectar un vehículo autorizado (patente registrada + confianza OCR superior al umbral). Se cierra tras un tiempo configurable. Si el vehículo no está autorizado, la barrera permanece cerrada y se genera una alerta.
+Modo manual remoto: El supervisor controla la barrera desde el dashboard web. Al presionar el botón “Abrir barrera”, se escribe un comando en Firebase que el ESP32-CAM recibe en tiempo real vía WebSocket y ejecuta activando el servo motor. Útil cuando la cámara no puede leer la patente o cuando se necesita autorizar un vehículo no registrado.
+Modo manual físico: Un botón pulsador conectado al GPIO 15 del ESP32-CAM permite la apertura inmediata de la barrera sin depender del sistema de reconocimiento ni de la conexión a internet. Diseñado para emergencias o contingencias. Cada apertura manual física se registra en Firebase como “apertura manual no programada” y genera una alerta informativa.
+Los tres modos coexisten: el modo automático es el modo de operación normal, pero el supervisor siempre puede intervenir desde el dashboard, y el botón físico siempre funciona como respaldo de emergencia independiente del estado del sistema. Cada apertura y cierre de barrera queda registrado en Firebase con su modo, timestamp y usuario que autorizó (cuando corresponda).
+Para el prototipo académico, la barrera se simula con un servo motor SG90 que levanta y baja un pequeño brazo. En una implementación productiva, el servo se reemplazaría por un módulo relé conectado al motor de una barrera vehicular industrial.
+5.7 Estructura de Datos en Firebase
+Los datos se organizan en Firebase Realtime Database con la siguiente estructura jerárquica JSON:
+registros/{id}: patente, timestamp, tipoEvento, puntoAcceso, confianzaOCR, fotoURL
+vehiculos/{patente}: empresa, tipoCarga, categoria, fechaRegistro
+alertas/{id}: tipo, descripcion, severidad, estado, timestamp
+usuarios/{uid}: email, rol, ultimoAcceso
+configuracion/: maxCamiones, tiempoMaxPermanencia, intervaloCaptura
+5.8 Seguridad
+La seguridad del sistema se implementa en múltiples capas:
+Comunicación: Todas las transferencias de datos entre el ESP32-CAM y la nube se realizan sobre HTTPS (TLS 1.2+), cifrando los datos en tránsito.
+Autenticación: Firebase Auth gestiona el registro e inicio de sesión con email/contraseña. Las contraseñas se almacenan con hash bcrypt (gestionado automáticamente por Firebase).
+Autorización: Firebase Security Rules restringen el acceso a la base de datos según el rol del usuario (custom claims). Los supervisores solo pueden leer datos; los administradores pueden leer y escribir.
+Tokens: Las sesiones se protegen con tokens JWT generados por Firebase Auth, con expiración configurable.
+6. Lista de Insumos y Materiales
+A continuación se detallan todos los insumos y materiales necesarios para la construcción del prototipo:
+7. Conclusiones
+El diseño propuesto en este compendio técnico presenta una solución innovadora para el monitoreo de acceso vehicular en una planta manufacturera, combinando tecnologías IoT con visión por computador y servicios en la nube. La arquitectura en cinco capas garantiza la modularidad, escalabilidad y mantenibilidad del sistema.
+La selección del ESP32-CAM como plataforma de hardware permite reducir significativamente los costos y la complejidad del prototipo, al integrar microcontrolador, cámara, WiFi y flash LED en un solo módulo. El uso de Plate Recognizer para el reconocimiento automático de patentes elimina la necesidad de intervención del conductor, diferenciando esta solución de los enfoques tradicionales basados en RFID.
+Firebase como plataforma cloud proporciona un ecosistema completo (base de datos en tiempo real, autenticación, hosting) que simplifica el desarrollo y reduce los costos a cero para un prototipo académico. El dashboard web responsive garantiza el acceso remoto desde cualquier dispositivo.
+Con un costo total estimado de $16 USD y todos los servicios de software gratuitos, el prototipo es viable tanto económicamente como técnicamente. La inclusión del control de barrera con tres modos de operación (automático, manual remoto y manual físico) demuestra la capacidad del sistema para gestionar el acceso vehicular de forma integral. La arquitectura está diseñada para escalar a un entorno productivo real mediante mejoras incrementales en el hardware (cámara de mayor resolución, barrera industrial, sensores especializados) y la plataforma cloud (planes pagados con mayor capacidad).
+Criterio de consistencia aplicado: arquitectura de port?n ?nico con dos sensores ultras?nicos HC-SR04 en el mismo lado f?sico, c?mara fija y l?gica de direcci?n por software para operaci?n bidireccional o por rol fijo (solo entrada / solo salida).
+
+[Tabla 0]
+Criterio | ESP32-CAM | Arduino + Módulo WiFi
+Procesador | Dual core 240 MHz, 520 KB SRAM, 4 MB PSRAM | Single core 16 MHz, 32 KB SRAM
+WiFi | Integrado (802.11 b/g/n) | Requiere módulo externo (ESP-01)
+Cámara | Integrada (OV2640, 2 MP, JPEG nativo) | No soporta cámara directamente
+Flash LED | Integrado en la placa | Requiere componente externo
+Bluetooth | BLE 4.2 integrado | No incluido
+Precio aprox. | $5-8 USD | $15-25 USD (placa + módulo WiFi + cámara)
+Dificultad | Baja (todo integrado) | Alta (múltiples componentes y cableado)
+
+[Tabla 1]
+Criterio | IR Obstáculo | Ultrasonido HC-SR04 | RFID RC522
+Función | Detecta presencia | Mide distancia | Lee tags RFID
+Salida | Digital (HIGH/LOW) | Analógica (tiempo) | SPI (datos)
+Intervención chofer | Ninguna | Ninguna | Debe acercar tag
+Complejidad | Muy baja (3 pines) | Baja (4 pines) | Media (6 pines SPI)
+Precio | ~$1 USD | ~$1 USD | ~$2 USD + tags
+
+[Tabla 2]
+Criterio | Plate Recognizer | Google Cloud Vision | OpenALPR / Rekor
+Especialización | Patentes vehiculares | OCR general (texto) | Patentes vehiculares
+Patentes chilenas | Sí (entrenado) | Requiere post-proceso | Sí (limitado)
+Plan gratuito | 2.500 lecturas/mes | 1.000 imágenes/mes | 1.000 lecturas/mes
+Precisión | Muy alta (>95%) | Media (requiere filtros) | Alta (>90%)
+Tiempo respuesta | ~200 ms | ~500 ms | ~300 ms
+
+[Tabla 3]
+Criterio | Firebase | ThingSpeak
+Tipo de BD | NoSQL en tiempo real (Realtime DB) | Canales de datos secuenciales
+Tiempo real | Sí (WebSocket nativo) | Limitado (polling cada 15s)
+Autenticación | Incluida (Firebase Auth) | No incluida (API keys básicas)
+Hosting web | Incluido (Firebase Hosting) | No incluido
+Dashboard custom | Completa libertad de diseño | Widgets predefinidos (limitados)
+Roles de usuario | Sí (custom claims) | No soporta roles
+Plan gratuito | Spark: 1 GB almacenamiento, 100 conexiones simultáneas | 3 millones mensajes/año, 4 canales
+Precio | Gratis (plan Spark) | Gratis (limitado)
+
+[Tabla 4]
+Tecnología | Uso en el Proyecto | Justificación
+Vue.js 3 | Framework reactivo para construir la interfaz con componentes reutilizables. | Curva de aprendizaje suave, templates HTML familiares, reactividad nativa.
+vue-chartjs + Chart.js | Gráficos de barras, líneas y dona para estadísticas de acceso vehicular. | Wrapper oficial de Chart.js para Vue. Ligero, declarativo, reactivo.
+Vue Router | Navegación entre pantallas del dashboard (inicio, historial, alertas, configuración). | Router oficial de Vue.js, soporta navegación SPA sin recarga de página.
+Firebase SDK (JS) | Conexión en tiempo real con Realtime DB, autenticación y gestión de sesiones. | SDK oficial de Google, bien documentado, actualización en tiempo real sin polling.
+Firebase Hosting | Despliegue y publicación del dashboard accesible vía internet. | HTTPS gratuito, CDN global, deploy con un comando (firebase deploy).
+
+[Tabla 5]
+Componente | Cantidad | Costo Unit. | Subtotal | Tipo
+ESP32-CAM (AI-Thinker + OV2640) | 1 | $6 USD | $6 USD | Hardware
+Sensor infrarrojo de obstáculo | 1 | $1 USD | $1 USD | Hardware
+Protoboard + cables jumper | 1 kit | $3 USD | $3 USD | Hardware
+Servo motor SG90 (barrera simulada) | 1 | $2 USD | $2 USD | Hardware
+Botón pulsador + resistencia pull-down | 1 | $0.15 | $0.15 | Hardware
+Plate Recognizer API (plan Spark) | - | $0 | $0 | Software
+Firebase (plan Spark) | - | $0 | $0 | Software
+Adaptador FTDI USB-Serial (programación) | 1 | $2 USD | $2 USD | Hardware
+TOTAL |  |  | ~$14 USD | 
+
+[Tabla 6]
+Sección | Administrador | Supervisor
+Dashboard (inicio) | ✓ | ✓
+Historial | ✓ | ✓
+Reportes | ✓ | ✓
+Alertas | ✓ | ✓
+Gestión de Vehículos | ✓ | ✗ (solo lectura)
+Configuración | ✓ | ✗
+Gestión de Usuarios | ✓ | ✗
+
+[Tabla 7]
+Componente | Pin Componente | Pin ESP32-CAM | Observación
+Sensor ultras?nico HC-SR04 | VCC | 3.3V | Alimentación
+Sensor ultras?nico HC-SR04 | GND | GND | Tierra común
+Sensor ultras?nico HC-SR04 | OUT | GPIO 13 y GPIO 14 | Señal digital
+Cámara OV2640 | Ribbon 24-pin | Conector integrado | Interfaz DVP paralela
+Flash LED | (integrado) | GPIO 4 | Control por software
+Servo SG90 (barrera) | Señal PWM | GPIO 12 | Control barrera
+Servo SG90 (barrera) | VCC / GND | 5V / GND | Alimentación
+Botón pulsador | Terminal 1 | GPIO 15 | Apertura manual física
+Botón pulsador | Terminal 2 | GND (con pull-down) | Resistencia 10KΩ
+Fuente de poder | 5V / GND | 5V / GND | USB o adaptador
+
+[Tabla 8]
+Material | Cantidad | Costo | Dónde adquirir
+ESP32-CAM AI-Thinker (con OV2640) | 1 | ~$6 USD | AliExpress, MercadoLibre
+Módulo sensor infrarrojo de obstáculo | 1 | ~$1 USD | AliExpress, MercadoLibre
+Protoboard 830 puntos | 1 | ~$2 USD | AliExpress, MercadoLibre
+Cables jumper (macho-hembra) | 1 pack | ~$1 USD | AliExpress, MercadoLibre
+Cable micro USB (alimentación) | 1 | ~$1 USD | Disponible en el hogar
+Adaptador FTDI USB-Serial (programación) | 1 | ~$2 USD | AliExpress, MercadoLibre
+Servo motor SG90 (barrera simulada) | 1 | ~$2 USD | AliExpress, MercadoLibre
+Botón pulsador + resistencia 10KΩ | 1 | ~$0.15 | AliExpress, MercadoLibre
+Patentes impresas en papel (para demo) | 5-10 | ~$0.50 | Impresión propia

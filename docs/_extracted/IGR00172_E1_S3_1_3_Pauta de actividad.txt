@@ -1,0 +1,53 @@
+INTEGRACIÓN DE COMPETENCIAS III
+Pauta de actividad: 1.3: Avance #2
+ANTECEDENTES GENERALES
+
+Recinto:
+Laboratorio.
+Competencia:
+CE5N4: Desarrollar soluciones a problemáticas contextualizadas de la industria y/o sociedad, a través del prototipado, utilizando, difundiendo y evaluando tecnologías emergentes relacionadas a la industria 4.0.
+Criterios de evaluación:
+Habilidad en el Prototipado.
+Uso y difusión de tecnología.
+
+PRESENTACIÓN DE LA ACTIVIDAD 
+
+En esta actividad, los y las estudiantes deberán diseñar un prototipo conceptual que represente una solución tecnológica basada en IoT (Internet de las Cosas). Deberán diseñar  el prototipo en base a los requerimientos del proyecto vistos en la actividad anterior. El producto final será un módulo funcional que simule condiciones reales de monitoreo, acompañado de un registro de pruebas y consideraciones técnicas observadas durante su implementación. Deberán considerar los insumos y materiales a utilizar y presentar el diseño del prototipo a su docente y aplicar las correcciones o sugerencias en base a la retroalimentación entregada.
+
+INSTRUCCIONES
+
+Debe trabajar de manera grupal (5 personas).
+Utilizar los computadores del laboratorio y el documento con el Caso Etapa I, el cual contiene el detalle de los requerimientos.
+Diseña el diagrama de arquitectura del sistema, incluyendo:
+Componentes de hardware (sensores, microcontroladores, actuadores)
+Componentes de software (plataformas IoT, almacenamiento en la nube)
+Canales de comunicación y protocolos
+Selecciona las tecnologías a utilizar y justifica cada elección en función del caso (ej. MQTT, Node-RED, ThingSpeak, etc.).
+Desarrolla una propuesta de interfaz de usuario que permita visualizar datos críticos del sistema.
+Compila toda la información en un documento único: Compendio técnico del prototipo.
+Sube el documento final al Aula Virtual antes de la fecha establecida
+
+DESARROLLO DE LA ACTIVIDAD
+
+Avance #2
+
+Revisen su planificación anterior y validen que los objetivos del proyecto estén claros y contextualizados.
+Diseñen el diagrama de arquitectura del sistema, definiendo las relaciones entre componentes físicos y digitales.
+Investiguen y seleccionen las tecnologías más apropiadas para la solución. Justifiquen la elección considerando aspectos como costo, compatibilidad, escalabilidad y facilidad de uso
+Desarrollen un bosquejo de interfaz de usuario para representar cómo se visualizarán los datos desde la solución IoT.
+Compilen toda la información en un documento técnico, bien estructurado y redactado profesionalmente.
+Suban el documento final al Aula Virtual y preparen una presentación de 5 minutos para socializar su propuesta ante el/la docente.
+Reciban retroalimentación técnica, identifiquen posibles mejoras y registren los ajustes para la siguiente etapa del proyecto.
+Requerimientos
+
+RF-02
+Diseño del Prototipo
+- Elaborar un diagrama de arquitectura del sistema, incluyendo hardware, software y comunicaciones.
+- Seleccionar y justificar las tecnologías más adecuadas para la solución, considerando sensores, plataformas IoT, almacenamiento en la nube y herramientas de análisis de datos.
+- Diseñar una propuesta de interfaz de usuario que permita la visualización y gestión eficiente de la información obtenida.
+- Realizar Documento en PDF o PowerPoint con el diseño conceptual y las justificaciones técnicas.
+
+Preguntas de cierre:
+¿Qué aprendiste de la actividad realizada? 
+¿En qué ámbitos puedes utilizar o aplicar lo realizado en la actividad? 
+¿Hubo algún término, definición o parte del proceso que necesites reforzar? ¿Cuál? 

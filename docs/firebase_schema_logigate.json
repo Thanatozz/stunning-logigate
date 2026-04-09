@@ -1,0 +1,169 @@
+{
+  "meta": {
+    "schemaVersion": 2,
+    "updatedAt": "2026-04-08T23:55:00Z"
+  },
+  "devices": {
+    "ESP32-GATE-001": {
+      "name": "ESP32 Gate Controller Norte",
+      "type": "esp32_cam",
+      "accessPoint": "porton_norte",
+      "status": "online",
+      "mode": "automatico",
+      "signal": 88,
+      "firmware": "v2.0.0",
+      "lastSeen": "2026-04-08T23:55:00Z",
+      "telemetry": {
+        "approachDistanceCm": 165.4,
+        "safetyDistanceCm": 220.1,
+        "presenceDetected": false,
+        "safetyBlocked": false,
+        "barrierStatus": "cerrada",
+        "uptimeMs": 182340
+      },
+      "lastCommandAck": {
+        "requestId": "cmd-20260408-001",
+        "status": "ok",
+        "message": "Barrier opened",
+        "processedAt": "2026-04-08T23:40:17Z"
+      }
+    }
+  },
+  "commands": {
+    "porton_norte": {
+      "requestId": "cmd-20260408-010",
+      "mode": "automatico",
+      "action": "none",
+      "autoOpenUntil": 0,
+      "updatedBy": "cloud-function",
+      "updatedAt": "2026-04-08T23:55:00Z"
+    }
+  },
+  "ingest": {
+    "detections": {
+      "ESP32-GATE-001-1712620104-8122": {
+        "deviceId": "ESP32-GATE-001",
+        "accessPoint": "porton_norte",
+        "capturedAt": "2026-04-08T23:30:40Z",
+        "trigger": "presence_rising_edge",
+        "approachDistanceCm": 140.2,
+        "safetyDistanceCm": 284.9,
+        "mode": "automatico",
+        "requiresAuthorization": true,
+        "firmware": "v2.0.0"
+      }
+    }
+  },
+  "vehicles": {
+    "AB1234": {
+      "plate": "AB1234",
+      "company": "Transportes Andes",
+      "cargoType": "materia_prima",
+      "category": "carga_pesada",
+      "status": "autorizado",
+      "active": true,
+      "createdAt": "2026-03-20T13:00:00Z"
+    }
+  },
+  "state": {
+    "currentCount": 3,
+    "maxCapacity": 20,
+    "occupancyLevel": "medio",
+    "trucksInside": {
+      "AB1234": {
+        "plate": "AB1234",
+        "company": "Transportes Andes",
+        "enteredAt": "2026-04-08T21:20:00Z",
+        "accumulatedMinutes": 155,
+        "accessPoint": "porton_norte"
+      }
+    }
+  },
+  "accessRecords": {
+    "rec-20260408-0001": {
+      "id": "rec-20260408-0001",
+      "plate": "AB1234",
+      "company": "Transportes Andes",
+      "eventType": "ingreso",
+      "timestamp": "2026-04-08T21:20:00Z",
+      "accessPoint": "porton_norte",
+      "ocrConfidence": 96.4,
+      "stayMinutes": null,
+      "barrierMode": "automatico",
+      "deviceId": "ESP32-GATE-001"
+    }
+  },
+  "alerts": {
+    "alert-20260408-0005": {
+      "id": "alert-20260408-0005",
+      "type": "vehiculo_no_autorizado",
+      "description": "Patente XY9988 no registrada",
+      "severity": "warning",
+      "status": "activa",
+      "timestamp": "2026-04-08T23:31:11Z",
+      "relatedPlate": "XY9988",
+      "source": "Cloud Function"
+    }
+  },
+  "barrier": {
+    "porton_norte": {
+      "status": "cerrada",
+      "mode": "automatico",
+      "lastActionAt": "2026-04-08T23:52:41Z",
+      "lastActionBy": "automatico",
+      "reason": "Auto close timeout"
+    }
+  },
+  "dashboardCache": {
+    "kpiSummary": {
+      "trucksInPlant": 3,
+      "todayEntries": 17,
+      "todayExits": 14,
+      "avgStayMinutes": 124
+    },
+    "dailySummary": {
+      "totalEntries": 17,
+      "totalExits": 14,
+      "avgStayMinutes": 124,
+      "peakHour": "11:00",
+      "occupancyRate": 62
+    },
+    "chartSeries": {
+      "activityByHour": {
+        "08:00": { "entries": 2, "exits": 1 },
+        "09:00": { "entries": 3, "exits": 2 }
+      }
+    },
+    "recentActivity": {
+      "act-20260408-1001": {
+        "title": "Ingreso registrado",
+        "detail": "Patente AB1234 por porton_norte",
+        "timestamp": "2026-04-08T21:20:00Z",
+        "level": "normal"
+      }
+    }
+  },
+  "settings": {
+    "maxTrucks": 20,
+    "maxStayMinutes": 480,
+    "ocrConfidenceThreshold": 80,
+    "captureIntervalSeconds": 5,
+    "barrierAutoCloseSeconds": 5
+  },
+  "users": {
+    "uid-demo-admin": {
+      "id": "uid-demo-admin",
+      "name": "Admin Demo",
+      "email": "admin@logigate.cl",
+      "role": "admin",
+      "lastLoginAt": "2026-04-08T20:10:00Z"
+    },
+    "uid-demo-supervisor": {
+      "id": "uid-demo-supervisor",
+      "name": "Supervisor Demo",
+      "email": "supervisor@logigate.cl",
+      "role": "supervisor",
+      "lastLoginAt": "2026-04-08T19:55:00Z"
+    }
+  }
+}

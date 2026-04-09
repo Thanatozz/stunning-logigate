@@ -11,7 +11,7 @@ const historyStore = useHistoryStore()
 const { records, filters, filteredRecords } = storeToRefs(historyStore)
 
 const page = ref(1)
-const pageSize = 6
+const pageSize = 10
 
 const totalPages = computed(() => Math.max(1, Math.ceil(filteredRecords.value.length / pageSize)))
 

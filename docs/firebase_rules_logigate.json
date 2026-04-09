@@ -1,0 +1,94 @@
+{
+  "rules": {
+    ".read": "auth != null",
+    ".write": false,
+
+    "devices": {
+      "$deviceId": {
+        ".read": "auth != null",
+        ".write": "auth.token.admin === true || auth.token.device_id === $deviceId",
+        "type": {
+          ".validate": "newData.isString() && (newData.val() === 'esp32_cam' || newData.val() === 'sensor_ir' || newData.val() === 'sensor_ultrasonico' || newData.val() === 'barrera_servo')"
+        },
+        "status": {
+          ".validate": "newData.isString() && (newData.val() === 'online' || newData.val() === 'offline' || newData.val() === 'degradado')"
+        },
+        "mode": {
+          ".validate": "newData.isString() && (newData.val() === 'automatico' || newData.val() === 'manual_remoto' || newData.val() === 'manual_fisico')"
+        }
+      }
+    },
+
+    "commands": {
+      "$accessPoint": {
+        ".read": "auth.token.admin === true || auth.token.supervisor === true || auth.token.device_access_point === $accessPoint",
+        ".write": "auth.token.admin === true || auth.token.supervisor === true || auth.token.isCloudFunction === true",
+        "mode": {
+          ".validate": "newData.isString() && (newData.val() === 'automatico' || newData.val() === 'manual_remoto' || newData.val() === 'manual_fisico')"
+        },
+        "action": {
+          ".validate": "newData.isString() && (newData.val() === 'none' || newData.val() === 'abrir' || newData.val() === 'cerrar')"
+        }
+      }
+    },
+
+    "ingest": {
+      "detections": {
+        "$eventId": {
+          ".read": "auth.token.admin === true || auth.token.isCloudFunction === true",
+          ".write": "auth.token.device_id != null || auth.token.isCloudFunction === true"
+        }
+      }
+    },
+
+    "vehicles": {
+      ".read": "auth != null",
+      ".write": "auth.token.admin === true || auth.token.supervisor === true"
+    },
+
+    "state": {
+      ".read": "auth != null",
+      ".write": "auth.token.isCloudFunction === true || auth.token.admin === true"
+    },
+
+    "accessRecords": {
+      ".read": "auth != null",
+      ".write": "auth.token.isCloudFunction === true || auth.token.admin === true"
+    },
+
+    "alerts": {
+      ".read": "auth != null",
+      ".write": "auth.token.isCloudFunction === true || auth.token.admin === true"
+    },
+
+    "barrier": {
+      "$accessPoint": {
+        ".read": "auth != null",
+        ".write": "auth.token.isCloudFunction === true || auth.token.admin === true || auth.token.device_access_point === $accessPoint",
+        "status": {
+          ".validate": "newData.isString() && (newData.val() === 'abierta' || newData.val() === 'cerrada' || newData.val() === 'en_transicion')"
+        },
+        "mode": {
+          ".validate": "newData.isString() && (newData.val() === 'automatico' || newData.val() === 'manual_remoto' || newData.val() === 'manual_fisico')"
+        }
+      }
+    },
+
+    "dashboardCache": {
+      ".read": "auth != null",
+      ".write": "auth.token.isCloudFunction === true || auth.token.admin === true"
+    },
+
+    "settings": {
+      ".read": "auth != null",
+      ".write": "auth.token.admin === true"
+    },
+
+    "users": {
+      "$uid": {
+        ".read": "auth != null && (auth.uid === $uid || auth.token.admin === true)",
+        ".write": "auth.token.admin === true"
+      }
+    }
+  }
+}

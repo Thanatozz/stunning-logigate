@@ -1,0 +1,55 @@
+INTEGRACIÓN DE COMPETENCIAS III
+Pauta de actividad: 1.2: Avance #1
+ANTECEDENTES GENERALES
+
+Recinto:
+Laboratorio.
+Competencia:
+CE1N4: Gestionar proyectos informáticos de acuerdo a las definiciones y requerimientos de la organización en función de buenas prácticas de la industria, utilizando estándares y metodologías pertinentes.
+Criterios de evaluación:
+Gestión de un proyecto
+Comprensión de requerimientos y definiciones.
+Uso de estándares y metodologías (lineamiento PMBOK y procesos unificados).
+
+PRESENTACIÓN DE LA ACTIVIDAD 
+
+En esta actividad, los y las estudiantes deberán planificar un proyecto informático a partir de un caso contextualizado, utilizando metodologías ágiles como SCRUM o Kanban. Deberán identificar los requerimientos, definir los objetivos específicos del proyecto, establecer los hitos clave y elaborar un cronograma de trabajo con asignación de roles. Esta planificación será entregada como parte del primer avance del proyecto global correspondiente a la Etapa I de la asignatura.
+
+INSTRUCCIONES
+
+Debe trabajar de manera grupal (5 personas).
+Utilizar los computadores del laboratorio y el documento con el Caso Etapa I, el cual contiene el detalle de los requerimientos.
+Diseña el Plan del Proyecto 
+Completa el documento de planificación grupal y carga el archivo final en el Aula Virtual en la sección correspondiente antes de la fecha establecida.
+
+DESARROLLO DE LA ACTIVIDAD
+
+Avance #1 
+
+Para completar la actividad debes seguir los siguientes pasos:
+Revisar el Caso Etapa I junto al equipo y discutir su alcance técnico y organizacional.
+Identificar y organizar los requerimientos principales del proyecto con apoyo de técnicas como historia de usuario, criterios de aceptación u otras
+Redactar la definición del problema y los objetivos específicos, en función de los requerimientos analizados.
+Establecer los hitos del proyecto según los entregables intermedios clave.
+
+Diseñar el cronograma del proyecto, utilizando herramientas como Excel, GanttProject, Trello o similares.
+Asignar roles y tareas al interior del equipo, considerando las fortalezas individuales y los criterios de trabajo colaborativo.
+Completar el documento de planificación grupal, asegurándose de integrar todos los componentes solicitados.
+Subir el archivo final al Aula Virtual y prepararse para su presentación y retroalimentación oral ante el/la docente.
+
+
+ID
+REQUERIMIENTO FUNCIONAL
+DESCRIPCIÓN
+RF-01
+Análisis de Requerimientos y Planificación del Proyecto
+- Definir el problema y sus implicaciones dentro del contexto de la manufactura.
+- Establecer objetivos específicos para la solución propuesta.
+- Identificar hitos clave del proyecto y estructurar un cronograma de trabajo mediante una Carta Gantt.
+- Definir los roles y tareas de los miembros del equipo siguiendo una metodología ágil (SCRUM o Kanban).
+- Desarrollar documento con el plan del proyecto
+
+Preguntas de cierre:
+¿Qué aprendiste de la actividad realizada? 
+¿En qué ámbitos puedes utilizar o aplicar lo realizado en la actividad? 
+¿Hubo algún término, definición o parte del proceso que necesites reforzar? ¿Cuál? 

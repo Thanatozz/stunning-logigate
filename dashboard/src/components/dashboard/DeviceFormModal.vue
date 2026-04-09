@@ -26,6 +26,7 @@ const localError = ref('')
 
 const typeOptions: Array<{ label: string; value: DeviceType }> = [
   { label: 'ESP32 CAM', value: 'esp32_cam' },
+  { label: 'Sensor ultrasonico', value: 'sensor_ultrasonico' },
   { label: 'Sensor IR', value: 'sensor_ir' },
   { label: 'Barrera servo', value: 'barrera_servo' },
 ]

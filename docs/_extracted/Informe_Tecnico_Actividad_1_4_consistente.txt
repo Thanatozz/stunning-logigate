@@ -1,0 +1,208 @@
+INTEGRACIÓN DE COMPETENCIAS III
+Informe Técnico de Implementación
+Actividad 1.4: Avance #3
+Prototipo Simulado en Wokwi
+Sistema IoT de Monitoreo de Acceso Vehicular
+mediante Reconocimiento Automático de Patentes
+Integrantes:
+[Nombre Integrante 1]
+[Nombre Integrante 2]
+[Nombre Integrante 3]
+[Nombre Integrante 4]
+[Nombre Integrante 5]
+Docente: [Nombre Docente]
+Fecha: [DD/MM/AAAA]
+1. Introducción
+El presente informe documenta el proceso de implementación del prototipo simulado correspondiente al Avance #3 de la asignatura Integración de Competencias III. Este avance constituye la validación de la factibilidad técnica del diseño conceptual presentado en el Avance #2, utilizando el simulador en línea Wokwi para recrear el circuito IoT en un entorno virtual controlado.
+El prototipo simula un sistema IoT de monitoreo de acceso vehicular compuesto por un módulo ESP32 con dos sensores infrarrojos para detección bidireccional, un servo motor SG90 como barrera vehicular simulada, un botón pulsador para apertura manual de emergencia, y LEDs indicadores de estado. La simulación valida la lógica de detección, el control de la barrera en sus tres modos de operación (automático, manual remoto y manual físico), y el flujo general del sistema.
+Dado que Wokwi no soporta el módulo ESP32-CAM con cámara OV2640 ni la conexión a APIs externas como Plate Recognizer, la funcionalidad de reconocimiento de patentes y la integración con Firebase se documentan mediante capturas y descripciones de cómo operarían los datos en el prototipo real. El informe incluye la estructura de datos esperada, el flujo de información entre componentes, y el diseño del dashboard que visualizaría los datos en un entorno productivo.
+2. Herramientas Utilizadas
+Nota: Wokwi no dispone del módulo ESP32-CAM con cámara OV2640. Para la simulación, se utilizó una placa ESP32 genérica y la funcionalidad de captura de imagen + reconocimiento de patentes se simuló mediante datos hardcodeados en el firmware (patentes predefinidas que se “leen” al activarse el sensor). La integración real con Plate Recognizer API y Firebase se implementará en la etapa de prototipo físico.
+3. Circuito Simulado en Wokwi
+El circuito simulado en Wokwi reproduce la lógica de hardware del sistema de control de acceso vehicular. A continuación se detalla cada componente y su conexión:
+3.1 Esquema de Conexiones
+[Insertar captura de pantalla aquí]
+Figura 1: Circuito completo simulado en Wokwi con todos los componentes conectados al ESP32.
+[Insertar captura de pantalla aquí]
+Figura 2: Detalle de las conexiones de los sensores ultras?nicos HC-SR04 y el servo motor en Wokwi.
+3.2 Diferencias entre Simulación y Prototipo Real
+4. Firmware — Lógica Implementada
+El firmware se desarrolló en C/C++ compatible con Arduino IDE y se ejecutó en el simulador Wokwi. Aunque la simulación no incluye cámara ni conexión real a APIs, la lógica completa del sistema está implementada y validada mediante el monitor serial.
+4.1 Flujo de Operación Simulado
+El firmware implementa el siguiente flujo, visible en el monitor serial de Wokwi:
+1. El ESP32 monitorea GPIO 13 (sensor exterior) y GPIO 14 (sensor interior) esperando detección.
+2. Al detectar presencia en cualquiera de los dos sensores, se imprime en serial: “[DETECCIÓN] Sensor S1/S2 activado”.
+3. Se simula la captura de imagen y lectura OCR: el firmware selecciona una patente de un array predefinido (ej: “AB-1234”, “CD-5678”, “XX-9999”) y asigna un score de confianza aleatorio entre 70% y 99%.
+4. Se aplica el filtro de confianza: si el score < 80%, se imprime “[DESCARTADO] Confianza 74% < umbral 80%” y el evento se ignora.
+5. Se verifica si la patente está en el array de vehículos autorizados (simula la consulta a Firebase /vehiculos/). Si no está, se imprime “[ALERTA] Vehículo no autorizado: XX-9999”, el LED rojo se enciende, y la barrera NO se abre.
+6. Si la patente está autorizada, se consulta el array local de vehículos presentes (simula /estadoPlanta/vehiculosPresentes/): si no está presente → INGRESO; si ya está presente → SALIDA.
+7. Se imprime el resultado: “[INGRESO] AB-1234 registrado. Camiones en planta: 3” o “[SALIDA] AB-1234 registrado. Permanencia: 45 min. Camiones en planta: 2”.
+8. El LED verde se enciende y el servo gira a 90° (barrera abre). Después de 5 segundos, el servo vuelve a 0° (barrera cierra) y el LED se apaga.
+9. En cualquier momento, si se presiona el botón (GPIO 15), la barrera abre inmediatamente y se imprime “[MANUAL] Apertura de emergencia física”.
+[Insertar captura de pantalla aquí]
+Figura 3: Monitor serial de Wokwi mostrando el flujo completo de detección, validación e ingreso de un vehículo.
+[Insertar captura de pantalla aquí]
+Figura 4: Monitor serial mostrando el rechazo de un vehículo no autorizado (LED rojo encendido, barrera cerrada).
+[Insertar captura de pantalla aquí]
+Figura 5: Monitor serial mostrando una salida con cálculo de tiempo de permanencia.
+4.2 Simulación de Datos OCR
+Para simular el reconocimiento de patentes sin cámara, el firmware utiliza un array de patentes predefinidas que rota en cada detección:
+Esta simulación permite validar los tres escenarios críticos del sistema: vehículo autorizado (ingreso/salida), vehículo no autorizado (rechazo), y falso positivo (descarte). En el prototipo real, estos datos provendrían de la cámara OV2640 + Plate Recognizer API.
+4.3 Control de Barrera — Tres Modos
+La simulación valida los tres modos de operación de la barrera:
+Modo automático: Al detectar un vehículo autorizado, el servo gira automáticamente a 90° (abierto) y regresa a 0° (cerrado) tras 5 segundos. El LED verde se enciende durante la apertura. Si el vehículo no está autorizado, el servo no se mueve y el LED rojo se enciende.
+Modo manual físico (botón GPIO 15): Al presionar el botón en Wokwi, la barrera abre inmediatamente sin importar el estado del sistema. Se imprime en serial “[MANUAL] Apertura de emergencia física”. Este modo siempre funciona, incluso si el sistema principal está en error.
+Modo manual remoto (simulado en serial): En el prototipo real, el supervisor abriría la barrera desde el dashboard Vue.js enviando un comando a Firebase. En la simulación, este modo se activa enviando el carácter “A” por el monitor serial de Wokwi, lo que simula la recepción de un comando remoto.
+[Insertar captura de pantalla aquí]
+Figura 6: Servo motor en Wokwi en posición abierta (90°) con LED verde encendido — vehículo autorizado.
+[Insertar captura de pantalla aquí]
+Figura 7: Servo motor en Wokwi en posición cerrada (0°) con LED rojo encendido — vehículo no autorizado.
+[Insertar captura de pantalla aquí]
+Figura 8: Apertura de barrera por botón de emergencia en Wokwi.
+5. Datos Esperados en el Prototipo Real
+Aunque la simulación en Wokwi no se conecta a Firebase ni a Plate Recognizer, a continuación se documenta cómo se verían los datos en el sistema real, utilizando la misma estructura definida en el diseño del Avance #2.
+5.1 Ejemplo de Registro de Ingreso en Firebase
+Cuando el ESP32-CAM real detecta un vehículo autorizado ingresando a la planta, se crearía el siguiente registro en Firebase Realtime Database:
+registros/-NxYz123abc:
+patente: "AB-1234"
+timestamp: 1711700000 (08:00 AM)
+tipoEvento: "ingreso"
+puntoAcceso: "porton_norte"
+confianzaOCR: 97.5
+modoApertura: "automatico"
+dispositivoId: "ESP32-CAM-001"
+5.2 Ejemplo de Registro de Salida en Firebase
+Cuando el mismo camión sale de la planta:
+registros/-NxYz456def:
+patente: "AB-1234"
+timestamp: 1711714400 (12:00 PM)
+tipoEvento: "salida"
+puntoAcceso: "porton_norte"
+confianzaOCR: 93.8
+tiempoPermanencia: 14400 (4 horas en segundos)
+modoApertura: "automatico"
+5.3 Estado de la Planta en Tiempo Real
+El nodo estadoPlanta/vehiculosPresentes reflejaría en tiempo real qué camiones están dentro de la planta:
+estadoPlanta:
+vehiculosPresentes:
+AB-1234: { horaIngreso: 1711700000, puntoIngreso: "porton_norte" }
+CD-5678: { horaIngreso: 1711703600, puntoIngreso: "porton_norte" }
+contadorActual: 2
+5.4 Ejemplo de Alerta Generada
+alertas/-NxYz789ghi:
+tipo: "vehiculo_no_autorizado"
+descripcion: "Patente XX-9999 no registrada en el sistema"
+severidad: "warning"
+estado: "activa"
+timestamp: 1711710000
+patenteRelacionada: "XX-9999"
+6. Mockups del Dashboard con Datos Esperados
+A continuación se presentan mockups del dashboard Vue.js mostrando cómo se visualizarían los datos en el prototipo real. Estos mockups representan la interfaz que se implementará en la siguiente etapa del proyecto.
+6.1 Pantalla Principal (Dashboard)
+La pantalla principal mostraría los KPIs en tiempo real (camiones en planta, ingresos del día, salidas del día, tiempo promedio), el semáforo de ocupación, el gráfico de actividad por hora, la tabla de camiones presentes, y el control de barrera.
+[Insertar captura de pantalla aquí]
+Figura 9: Mockup de la pantalla principal del dashboard con datos de ejemplo.
+6.2 Pantalla de Historial
+El historial mostraría todos los registros de acceso vehicular con filtros por fecha, patente, empresa y punto de acceso. Los datos de ejemplo reflejan los registros que generaría el sistema real.
+[Insertar captura de pantalla aquí]
+Figura 10: Mockup de la pantalla de historial con filtros y datos de ejemplo.
+6.3 Pantalla de Alertas
+Las alertas mostrarían los eventos anómalos detectados por el sistema: vehículos no autorizados, permanencia excesiva, y aperturas manuales de emergencia.
+[Insertar captura de pantalla aquí]
+Figura 11: Mockup de la pantalla de alertas con datos de ejemplo.
+6.4 Control de Barrera
+El panel de control de barrera mostraría el estado actual (abierta/cerrada), el modo activo (automático/manual), y los botones de control remoto para el supervisor.
+[Insertar captura de pantalla aquí]
+Figura 12: Mockup del panel de control de barrera en el dashboard.
+7. Pruebas Realizadas en Wokwi
+Se realizaron pruebas sistemáticas en el simulador Wokwi para verificar la lógica de cada componente del sistema:
+[Insertar captura de pantalla aquí]
+Figura 13: Captura de Wokwi durante la prueba de ingreso exitoso (servo abierto + LED verde).
+[Insertar captura de pantalla aquí]
+Figura 14: Captura de Wokwi durante la prueba de rechazo (servo cerrado + LED rojo).
+8. Problemas Detectados y Soluciones Aplicadas
+Nota: Los problemas comunes en simulaciones Wokwi incluyen: conflictos de GPIO (pines reservados del ESP32), servo motor no responde (pin incorrecto o librería no compatible), sensor PIR con tiempos de activación largos, botón con rebote (bouncing), y lógica de cooldown interfiriendo con detecciones consecutivas.
+9. Limitaciones de la Simulación y Próxima Etapa
+9.1 Limitaciones de la Simulación en Wokwi
+La simulación en Wokwi valida la lógica del sistema pero presenta las siguientes limitaciones respecto al prototipo real:
+•  No se puede simular la cámara OV2640 ni la captura de imágenes JPEG. El reconocimiento de patentes se simuló con datos hardcodeados.
+•  No se puede conectar a APIs externas reales (Plate Recognizer) desde Wokwi.
+•  No se puede conectar a Firebase Realtime Database. La lógica de estado se implementó con variables locales en el ESP32.
+•  No se puede implementar el dashboard Vue.js conectado en tiempo real. Se presentaron mockups con datos esperados.
+•  Los sensores PIR de Wokwi tienen comportamiento ligeramente diferente a los sensores ultras?nicos HC-SR04 de obstáculo físicos.
+•  La alimentación eléctrica no es un factor en simulación (en el prototipo real, el ESP32-CAM requiere 5V 2A).
+9.2 Próximos Pasos para el Prototipo Físico
+Para evolucionar de la simulación al prototipo físico funcional, se deben completar las siguientes tareas:
+1. Adquirir el hardware real (ESP32-CAM + sensores ultras?nicos HC-SR04 + servo + protoboard).
+2. Migrar el firmware de Wokwi a Arduino IDE, reemplazando los datos hardcodeados por la integración real con Plate Recognizer API.
+3. Configurar Firebase (Realtime Database, Authentication, Hosting) e integrar con el firmware.
+4. Desarrollar el dashboard Vue.js con los composables de Firebase para actualización en tiempo real.
+5. Conectar el control de barrera remoto (dashboard → Firebase → ESP32-CAM → servo).
+6. Realizar pruebas de integración end-to-end con patentes impresas en papel.
+7. Desplegar el dashboard en Firebase Hosting para acceso remoto.
+10. Conclusiones
+La simulación del prototipo en Wokwi valida la factibilidad técnica de la lógica central del sistema de monitoreo de acceso vehicular. A pesar de las limitaciones inherentes del simulador (ausencia de cámara, APIs y conectividad cloud), se logró demostrar el correcto funcionamiento de los siguientes aspectos críticos:
+•  La detección bidireccional con dos sensores ultras?nicos HC-SR04 funciona correctamente, activando la secuencia de procesamiento sin importar la dirección de aproximación del vehículo.
+•  La lógica de stateful event detection (ingreso/salida por estado) opera según lo diseñado, determinando correctamente el tipo de evento y calculando tiempos de permanencia.
+•  El filtrado de falsos positivos en dos capas (confianza OCR + patente registrada) descarta efectivamente los eventos inválidos.
+•  El control de barrera funciona en sus tres modos: automático (vehículo autorizado), manual físico (botón de emergencia) y manual remoto (comando serial simulando dashboard).
+•  Los indicadores LED reflejan correctamente el estado del sistema (verde = autorizado, rojo = no autorizado/alerta).
+La simulación sirve como base sólida para la implementación del prototipo físico, ya que la lógica del firmware está validada y solo requiere reemplazar los datos simulados por las integraciones reales (cámara, Plate Recognizer, Firebase). La arquitectura modular del código facilita esta transición sin necesidad de reescribir la lógica de negocio.
+Criterio de consistencia aplicado: prototipo de 1 carril con dos sensores ultras?nicos HC-SR04 instalados en el mismo lado f?sico del port?n, c?mara fija y l?gica de direcci?n (ingreso/salida) resuelta por software mediante estado del veh?culo.
+
+[Tabla 0]
+Herramienta | Descripción y Configuración
+Wokwi (wokwi.com) | Simulador en línea de microcontroladores. Se utilizó para simular el circuito ESP32 con sensores ultras?nicos HC-SR04, servo motor, botón y LEDs. Permite escribir y ejecutar código Arduino/C++ directamente en el navegador.
+ESP32 (simulado en Wokwi) | Placa ESP32 genérica disponible en Wokwi. Simula los GPIO, WiFi (limitado), y el monitor serial. Reemplaza al ESP32-CAM físico para efectos de la simulación.
+Arduino IDE / Editor Wokwi | El código se desarrolló en el editor integrado de Wokwi, compatible con sintaxis Arduino C/C++. Librerías utilizadas: ESP32Servo, ArduinoJson.
+Componentes simulados | 2x sensor PIR/IR (simula sensores de obstáculo), 1x servo motor SG90 (barrera), 1x push button (apertura manual), 2x LED (indicadores de estado), resistencias pull-down.
+Monitor Serial (Wokwi) | Utilizado para visualizar los mensajes de debug del firmware: detección de sensores, simulación de lectura OCR, lógica de ingreso/salida, y estado de la barrera.
+
+[Tabla 1]
+Componente Wokwi | Pin Componente | GPIO ESP32 | Función en el Sistema Real
+Sensor ultras?nico S1 | OUT | GPIO 13 | Simula sensor IR exterior — detecta vehículo acercandose desde afuera del portón
+Sensor ultras?nico S2 | OUT | GPIO 14 | Simula sensor IR interior — detecta vehículo acercandose desde adentro del portón
+Servo Motor SG90 | Señal PWM | GPIO 12 | Simula barrera vehicular — gira a 90° para abrir, vuelve a 0° para cerrar
+Push Button | Terminal | GPIO 15 | Simula botón de emergencia físico — apertura manual instantánea de la barrera
+LED Verde | Ánodo | GPIO 2 | Indicador de estado — encendido = vehículo autorizado / barrera abierta
+LED Rojo | Ánodo | GPIO 4 | Indicador de estado — encendido = vehículo no autorizado / alerta. En el prototipo real, GPIO 4 es el flash LED
+
+[Tabla 2]
+Aspecto | Simulación (Wokwi) | Prototipo Real
+Microcontrolador | ESP32 genérico (sin cámara) | ESP32-CAM AI-Thinker (con OV2640)
+Detección de patente | Patentes hardcodeadas en el código (simuladas) | Cámara OV2640 + Plate Recognizer API (OCR real)
+Base de datos | Estado simulado en variables locales del ESP32 | Firebase Realtime Database (sincronización en tiempo real)
+Dashboard | No implementado (se muestran mockups con datos esperados) | Vue.js 3 + vue-chartjs conectado a Firebase en tiempo real
+Sensores | Sensores ultras?nicos simulados en Wokwi (S1 y S2, mismo lado f?sico). | Sensores IR de obstáculo físicos (GPIO 13 y 14)
+Barrera | Servo SG90 simulado en Wokwi (visual) | Servo SG90 físico en protoboard
+Comunicación | Monitor serial (mensajes de debug) | HTTPS (TLS 1.2+) a Firebase y Plate Recognizer
+Lógica ingreso/salida | Stateful event detection en memoria local | Stateful event detection consultando Firebase
+
+[Tabla 3]
+Patente Simulada | Empresa (simulada) | Autorizado | Comportamiento
+AB-1234 | Transportes Chile SpA | Sí | Ingreso/salida + barrera abre
+CD-5678 | Logística Sur Ltda. | Sí | Ingreso/salida + barrera abre
+EF-9012 | Carga Rápida SPA | Sí | Ingreso/salida + barrera abre
+XX-9999 | (no registrado) | No | Alerta + barrera NO abre
+(sin lectura) | (confianza < 80%) | N/A | Evento descartado
+
+[Tabla 4]
+# | Caso de Prueba | Resultado Esperado | Resultado | Estado
+1 | Activar sensor exterior → detectar presencia | Serial: [DETECCIÓN] Sensor exterior activado | [Indicar] | [✓ / ✗]
+2 | Activar sensor interior → detectar presencia | Serial: [DETECCIÓN] Sensor interior activado | [Indicar] | [✓ / ✗]
+3 | Patente autorizada detectada → ingreso | Serial: [INGRESO] + servo abre + LED verde | [Indicar] | [✓ / ✗]
+4 | Misma patente detectada de nuevo → salida | Serial: [SALIDA] + tiempo calculado + servo abre | [Indicar] | [✓ / ✗]
+5 | Patente NO autorizada → rechazo | Serial: [ALERTA] + servo NO se mueve + LED rojo | [Indicar] | [✓ / ✗]
+6 | Confianza OCR < 80% → descarte | Serial: [DESCARTADO] + ningún movimiento | [Indicar] | [✓ / ✗]
+7 | Botón de emergencia presionado | Serial: [MANUAL] + servo abre inmediatamente | [Indicar] | [✓ / ✗]
+8 | Comando remoto “A” por serial | Serial: [REMOTO] + servo abre | [Indicar] | [✓ / ✗]
+9 | Barrera cierra automáticamente tras timer | Servo vuelve a 0° tras 5 segundos | [Indicar] | [✓ / ✗]
+10 | Múltiples ingresos → contador incrementa | Serial muestra contador correcto | [Indicar] | [✓ / ✗]
+
+[Tabla 5]
+# | Problema Detectado | Causa Identificada | Solución Aplicada
+1 | Jitter del servo al abrir/cerrar la barrera en simulaci?n. | Ciclo de control sin filtro temporal y actualizaci?n demasiado frecuente del servo. | Se agreg? ventana de estabilizaci?n y temporizador de cierre controlado para evitar oscilaciones.
+2 | Aperturas manuales repetidas por rebote del pulsador. | Lectura directa del bot?n sin antirrebote por software. | Se implement? debounce por tiempo y validaci?n de flanco para una sola apertura por pulsaci?n.
+3 | Falsos disparos de detecci?n en secuencias r?pidas. | Ausencia de confirmaci?n cruzada entre sensores de proximidad. | Se defini? l?gica S1 (disparo) + S2 (confirmaci?n) y cooldown entre eventos consecutivos.
+4 | Inconsistencias al clasificar ingreso/salida durante pruebas continuas. | Actualizaci?n tard?a del estado local de veh?culos presentes. | Se reorden? el flujo para actualizar estado inmediatamente despu?s de validar patente y evento.
+5 | Diferencias entre lecturas simuladas y comportamiento esperado en terreno. | El simulador Wokwi no reproduce completamente ruido f?sico y ecos espurios de ultrasonido. | Se document? calibraci?n pendiente (umbrales y tiempos) para pruebas con hardware real.

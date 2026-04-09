@@ -75,7 +75,7 @@ export interface Alert {
   source: string
 }
 
-export type DeviceType = 'esp32_cam' | 'sensor_ir' | 'barrera_servo'
+export type DeviceType = 'esp32_cam' | 'sensor_ir' | 'sensor_ultrasonico' | 'barrera_servo'
 export type DeviceStatus = 'online' | 'offline' | 'degradado'
 
 export interface Device {

@@ -1,0 +1,906 @@
+
+
+
+
+INTEGRACIÓN DE COMPETENCIAS III
+
+Plan del Proyecto
+Actividad 1.2: Avance #1
+
+Sistema IoT de Monitoreo de Acceso Vehicular
+mediante Reconocimiento Automático de Patentes
+
+
+
+Integrantes:
+[Nombre Integrante 1]
+[Nombre Integrante 2]
+[Nombre Integrante 3]
+[Nombre Integrante 4]
+[Nombre Integrante 5]
+
+Docente: [Nombre Docente]
+Fecha: [DD/MM/AAAA]
+
+1. Definición del Problema
+Una pequeña empresa manufacturera se encuentra en proceso de modernización y requiere optimizar la gestión de su logística de transporte, específicamente el control de acceso de camiones a su planta industrial. Actualmente, el registro de ingreso y salida de vehículos se realiza de forma manual mediante planillas físicas, lo que genera múltiples problemas operativos:
+
+•  Falta de visibilidad en tiempo real sobre la cantidad de camiones dentro de la planta, impidiendo la toma de decisiones ágiles.
+•  Errores humanos en los registros manuales (datos incompletos, ilegibles o duplicados), que afectan la trazabilidad de las operaciones.
+•  Imposibilidad de generar reportes automáticos para análisis de patrones logísticos, horas pico y tiempos de permanencia.
+•  Ausencia de un sistema de alertas que permita anticipar cuellos de botella o situaciones anormales en la operación.
+•  Dependencia de la presencia física del supervisor para conocer el estado de la planta, sin posibilidad de monitoreo remoto.
+
+Ante esta problemática, la gerencia ha solicitado el desarrollo de un prototipo funcional basado en tecnologías de la Industria 4.0 que combine Internet de las Cosas (IoT), visión por computador y computación en la nube. La solución propuesta utiliza un módulo ESP32-CAM con cámara OV2640 para capturar imágenes de las patentes vehiculares, el servicio Plate Recognizer para reconocimiento automático de patentes (OCR), y la plataforma Firebase para almacenamiento, autenticación y visualización de datos en tiempo real mediante un dashboard web desarrollado con Vue.js.
+
+Nota: Este prototipo valida la viabilidad del concepto utilizando hardware de bajo costo (~$12 USD). La arquitectura está diseñada para escalar a un entorno productivo real mediante mejoras como cámaras de mayor resolución (OV5640 con autofocus), lectores RFID UHF de largo alcance, integración con ERP empresarial, y migración a plataformas cloud de grado industrial.
+
+2. Objetivos del Proyecto
+2.1 Objetivo General
+Desarrollar un prototipo funcional basado en IoT y visión por computador que permita automatizar el registro, monitoreo y visualización en tiempo real del ingreso y salida de camiones en una planta manufacturera, utilizando reconocimiento automático de patentes y almacenamiento en la nube.
+
+2.2 Objetivos Específicos
+OE1. Implementar un sistema de detección de presencia vehicular y captura automática de imágenes de patentes utilizando un módulo ESP32-CAM con sensor infrarrojo.
+OE2. Integrar el servicio de reconocimiento óptico de caracteres Plate Recognizer para la identificación automática de patentes vehiculares sin intervención humana.
+OE3. Implementar un algoritmo de detección de dirección (ingreso/salida) basado en el estado del vehículo en la base de datos, eliminando la necesidad de hardware adicional para determinar la dirección.
+OE4. Diseñar e implementar la comunicación segura (HTTPS/TLS) entre los dispositivos IoT y Firebase para el almacenamiento centralizado de datos en tiempo real.
+OE5. Desarrollar un dashboard web responsive con Vue.js 3 que permita la visualización en tiempo real del estado de la planta, incluyendo gráficos, indicadores y listados.
+OE6. Implementar un sistema de alertas configurables y filtrado de falsos positivos que notifique condiciones anormales y descarte detecciones no válidas.
+OE7. Crear un módulo de reportes que permita el análisis histórico de movimientos logísticos con filtros y exportación de datos.
+OE8. Garantizar la resiliencia del sistema ante fallas de conectividad mediante buffer local y sincronización automática.
+OE9. Aplicar metodología ágil (Kanban) para la planificación, gestión y seguimiento del proyecto, utilizando un tablero digital que permita el trabajo asíncrono y colaborativo del equipo.
+
+3. Requerimientos Funcionales
+Los requerimientos funcionales se organizaron en módulos para facilitar su visualización, mantener un orden lógico y permitir que cada integrante del equipo identifique claramente las funcionalidades asociadas a su rol dentro del proyecto.
+
+3.1 Módulo de Gestión de Vehículos
+ID
+Descripción
+RF-01
+Registrar camiones con datos básicos (patente, empresa transportista, tipo de carga, capacidad).
+RF-02
+Editar y eliminar registros de camiones del sistema.
+RF-03
+Asociar cada camión a una empresa transportista para facilitar la trazabilidad.
+RF-04
+Clasificar los vehículos por categoría (carga pesada, liviana, refrigerada, etc.).
+
+3.2 Módulo de Detección, Reconocimiento y Registro
+ID
+Descripción
+RF-05
+Detectar automáticamente la presencia de un vehículo en el portón mediante un sensor infrarrojo conectado al ESP32-CAM.
+RF-06
+Capturar automáticamente una imagen JPEG de la patente del vehículo utilizando la cámara OV2640 del ESP32-CAM al detectarse presencia.
+RF-07
+Enviar la imagen capturada a la API de Plate Recognizer para obtener el texto de la patente mediante reconocimiento óptico de caracteres (OCR).
+RF-08
+Determinar automáticamente si el evento es ingreso o salida mediante consulta de estado en Firebase (si el vehículo no tiene registro activo → ingreso; si tiene registro activo → salida).
+RF-09
+Registrar cada evento con: timestamp, patente, tipo de evento (ingreso/salida), punto de acceso, índice de confianza del OCR y URL de la foto.
+RF-10
+Calcular automáticamente el tiempo de permanencia de cada camión dentro de la planta.
+RF-11
+Soportar múltiples puntos de acceso (portones) de forma independiente, cada uno con su propio módulo ESP32-CAM.
+RF-12
+Filtrar falsos positivos: descartar eventos donde Plate Recognizer no detecte patente (confianza < 80%) o la patente no esté registrada en el sistema.
+RF-13
+Permitir el registro manual de ingreso/salida como respaldo cuando la cámara o la API no estén operativas.
+
+3.3 Módulo de Comunicación IoT y Nube
+ID
+Descripción
+RF-14
+Enviar los datos capturados por el ESP32-CAM a Firebase Realtime Database mediante HTTPS (TLS 1.2+).
+RF-15
+Almacenar los datos de forma estructurada en Firebase con campos estandarizados (patente, timestamp, tipoEvento, puntoAcceso, confianzaOCR).
+RF-16
+Implementar un buffer local en el ESP32-CAM para almacenar temporalmente los datos cuando no haya conexión a internet, y sincronizarlos al restablecerse.
+RF-17
+Validar la integridad de los datos antes de almacenarlos en Firebase (evitar duplicados, datos corruptos).
+RF-18
+Registrar logs de conectividad del dispositivo IoT (conexión, desconexión, errores).
+
+3.4 Módulo de Dashboard y Visualización
+ID
+Descripción
+RF-19
+Mostrar en tiempo real la cantidad de camiones actualmente dentro de la planta.
+RF-20
+Mostrar un listado de los camiones presentes con su hora de ingreso y tiempo acumulado.
+RF-21
+Incluir gráficos de barras o líneas (vue-chartjs) con la cantidad de ingresos/salidas por hora del día.
+RF-22
+Mostrar un indicador visual (semáforo) del nivel de ocupación de la planta (verde: bajo, amarillo: medio, rojo: alto).
+RF-23
+Mostrar el estado de conexión de los sensores/dispositivos IoT (online/offline).
+RF-24
+Permitir visualizar los datos en formato de tabla y gráfico simultáneamente.
+RF-25
+Ser accesible desde navegadores web en dispositivos de escritorio y móviles (responsive), desarrollado con Vue.js 3.
+
+3.5 Módulo de Alertas y Notificaciones
+ID
+Descripción
+RF-26
+Generar una alerta cuando la cantidad de camiones en planta supere un umbral configurable.
+RF-27
+Alertar cuando un camión permanezca en planta más tiempo del máximo permitido (configurable).
+RF-28
+Notificar cuando un sensor/dispositivo IoT pierda conexión por más de un tiempo definido.
+RF-29
+Generar alerta de inconsistencia cuando se detecte un ingreso de un vehículo que ya figura como presente en planta, o una salida sin ingreso previo.
+RF-30
+Mostrar las alertas en el dashboard de forma visible (banner, color, sonido).
+RF-31
+Mantener un historial de alertas generadas con su estado (activa, resuelta, ignorada).
+
+3.6 Módulo de Reportes e Historial
+ID
+Descripción
+RF-32
+Consultar el historial de movimientos filtrado por rango de fechas.
+RF-33
+Filtrar el historial por camión específico, empresa transportista o punto de acceso.
+RF-34
+Generar un reporte resumen diario con: total de ingresos, total de salidas, tiempo promedio de permanencia, hora pico.
+RF-35
+Permitir exportar los reportes en formato CSV o PDF.
+RF-36
+Mostrar estadísticas comparativas entre períodos (ej: semana actual vs. anterior).
+
+3.7 Módulo de Usuarios y Seguridad
+ID
+Descripción
+RF-37
+Permitir el registro e inicio de sesión de usuarios con credenciales (correo y contraseña) mediante Firebase Auth.
+RF-38
+Manejar al menos dos roles: Administrador (configuración completa) y Supervisor (solo visualización y reportes).
+RF-39
+Registrar un log de auditoría con las acciones realizadas por cada usuario.
+
+3.8 Módulo de Configuración
+ID
+Descripción
+RF-40
+Configurar los umbrales de alertas (máximo de camiones, tiempo máximo de permanencia).
+RF-41
+Registrar y administrar los puntos de acceso (portones) de la planta.
+RF-42
+Configurar los intervalos de captura del ESP32-CAM.
+RF-43
+Configurar el umbral mínimo de confianza de Plate Recognizer para aceptar una lectura (por defecto 80%).
+
+3.9 Módulo de Control de Barrera
+ID
+Descripción
+RF-44
+Controlar una barrera física (servo motor en prototipo / motor industrial en producción) mediante señal GPIO del ESP32-CAM.
+RF-45
+Operar la barrera en modo automático: abrir al detectar un vehículo autorizado y cerrar automáticamente tras un tiempo configurable.
+RF-46
+Operar la barrera en modo manual remoto: permitir al supervisor abrir/cerrar la barrera desde el dashboard web mediante un comando enviado a Firebase.
+RF-47
+Operar la barrera en modo manual físico: permitir la apertura inmediata mediante un botón pulsador conectado al GPIO del ESP32-CAM, para emergencias o contingencias.
+RF-48
+Permitir cambiar entre los tres modos de operación (automático, manual remoto, manual físico) desde el dashboard.
+RF-49
+Registrar cada apertura/cierre de barrera en Firebase con: timestamp, modo de apertura (automático/manual remoto/manual físico), usuario que autorizó (cuando corresponda) y patente del vehículo asociado.
+RF-50
+Mostrar en el dashboard el estado actual de la barrera (abierta/cerrada) en tiempo real.
+RF-51
+No abrir la barrera cuando el vehículo no esté registrado o la confianza de lectura sea inferior al umbral (en modo automático).
+
+4. Requerimientos No Funcionales
+Los requerimientos no funcionales se agruparon por categorías de calidad (rendimiento, disponibilidad, seguridad, usabilidad, entre otras) para establecer de forma clara los estándares y restricciones técnicas que el sistema debe cumplir más allá de sus funcionalidades.
+
+4.1 Rendimiento
+ID
+Descripción
+RNF-01
+Los datos deben reflejarse en el dashboard en menos de 10 segundos desde la detección del evento.
+RNF-02
+El dashboard debe cargar completamente en menos de 3 segundos.
+RNF-03
+El sistema debe soportar al menos 50 eventos de ingreso/salida por hora sin degradación.
+
+4.2 Disponibilidad y Confiabilidad
+ID
+Descripción
+RNF-04
+El sistema en la nube debe tener una disponibilidad mínima del 99%.
+RNF-05
+El ESP32-CAM debe operar de forma continua 24/7 sin necesidad de reinicio manual.
+RNF-06
+El sistema debe recuperarse automáticamente ante pérdidas temporales de conexión WiFi.
+
+4.3 Escalabilidad
+ID
+Descripción
+RNF-07
+La arquitectura debe permitir agregar nuevos portones (ESP32-CAM) sin rediseñar el sistema.
+RNF-08
+La base de datos en Firebase debe soportar al menos 6 meses de registros históricos sin afectar el rendimiento.
+
+4.4 Usabilidad
+ID
+Descripción
+RNF-09
+El dashboard debe ser comprensible para usuarios no técnicos sin capacitación previa.
+RNF-10
+La interfaz debe seguir principios de diseño intuitivo con iconografía clara y navegación simple.
+
+4.5 Seguridad
+ID
+Descripción
+RNF-11
+Las comunicaciones entre el ESP32-CAM y la nube deben usar protocolo HTTPS (TLS 1.2+).
+RNF-12
+Las contraseñas de usuarios deben almacenarse con encriptación (hash bcrypt, gestionado por Firebase Auth).
+RNF-13
+El acceso al dashboard debe requerir autenticación obligatoria.
+
+4.6 Compatibilidad
+ID
+Descripción
+RNF-14
+El dashboard debe ser compatible con Chrome, Firefox y Edge en sus últimas dos versiones.
+RNF-15
+El sistema IoT debe ser compatible con módulos ESP32-CAM (AI-Thinker).
+
+4.7 Mantenibilidad
+ID
+Descripción
+RNF-16
+El código del sistema debe estar documentado y versionado en un repositorio Git (GitHub).
+RNF-17
+La arquitectura debe seguir una separación clara entre capas (sensores → comunicación → almacenamiento → presentación).
+
+5. Historias de Usuario
+Las historias de usuario describen las funcionalidades del sistema desde la perspectiva de los distintos actores involucrados. Cada historia incluye criterios de aceptación que definen las condiciones mínimas para considerarla completada, los requerimientos funcionales asociados, y una estimación de esfuerzo en Story Points utilizando la escala de Fibonacci (1, 2, 3, 5, 8, 13, 21), donde un valor mayor indica mayor complejidad y esfuerzo de desarrollo. El proyecto contempla un total de 84 Story Points distribuidos en 16 historias de usuario, lo que permite al equipo planificar la carga de trabajo por etapa y monitorear el avance del proyecto a través del tablero Kanban.
+
+HU-01: Detección y registro automático de vehículos
+Historia de Usuario
+Como supervisor de planta, quiero que el sistema detecte automáticamente cuando un camión llega al portón, capture su patente por cámara y registre el evento sin intervención humana, para eliminar los registros manuales.
+Criterios de Aceptación
+1. El sensor IR detecta presencia y activa la cámara OV2640.
+2. La imagen se envía a Plate Recognizer y se obtiene la patente.
+3. El sistema determina si es ingreso o salida consultando el estado en Firebase.
+4. El registro se almacena en Firebase con timestamp, patente, tipo de evento y punto de acceso.
+RF Relacionados
+RF-05, RF-06, RF-07, RF-08, RF-09
+Estimación (Story Points)
+13 puntos (Alta complejidad)
+
+HU-02: Gestión de flota de camiones
+Historia de Usuario
+Como administrador del sistema, quiero registrar y gestionar los datos de los camiones que operan con la planta, para tener un inventario actualizado y facilitar la identificación de cada vehículo.
+Criterios de Aceptación
+1. Se pueden registrar camiones con patente, empresa y tipo de carga.
+2. Se pueden editar y eliminar registros existentes.
+3. Los camiones se clasifican por categoría.
+RF Relacionados
+RF-01, RF-02, RF-03, RF-04
+Estimación (Story Points)
+3 puntos (Baja complejidad)
+
+HU-03: Visualización en tiempo real
+Historia de Usuario
+Como supervisor de planta, quiero ver en un panel cuántos camiones están dentro de la planta en este momento, para tomar decisiones logísticas de forma ágil.
+Criterios de Aceptación
+1. El dashboard muestra la cantidad actual de camiones en planta.
+2. La información se actualiza en menos de 10 segundos.
+3. Se puede acceder desde cualquier dispositivo con navegador.
+RF Relacionados
+RF-19, RF-20, RF-25
+Estimación (Story Points)
+8 puntos (Alta complejidad)
+
+HU-04: Monitoreo de ocupación con semáforo
+Historia de Usuario
+Como jefe de logística, quiero ver un indicador visual tipo semáforo que me muestre si la planta está con ocupación baja, media o alta, para coordinar los despachos y recepciones.
+Criterios de Aceptación
+1. El semáforo cambia de color según umbrales configurables.
+2. Verde: ocupación baja, Amarillo: media, Rojo: alta.
+3. El indicador es visible desde la pantalla principal del dashboard.
+RF Relacionados
+RF-22
+Estimación (Story Points)
+3 puntos (Baja complejidad)
+
+HU-05: Historial de movimientos
+Historia de Usuario
+Como jefe de logística, quiero consultar el historial de ingresos y salidas por rango de fechas, para analizar patrones de tráfico y planificar mejor las operaciones.
+Criterios de Aceptación
+1. Se puede filtrar por fecha de inicio y fecha de fin.
+2. Se muestra una tabla con los registros (hora, tipo de evento, identificador).
+3. Se pueden filtrar por camión, empresa o punto de acceso.
+RF Relacionados
+RF-32, RF-33
+Estimación (Story Points)
+5 puntos (Media complejidad)
+
+HU-06: Estadísticas y gráficos
+Historia de Usuario
+Como gerente de operaciones, quiero ver gráficos con la distribución de ingresos y salidas por hora del día, para identificar horas pico y optimizar los turnos del personal de portón.
+Criterios de Aceptación
+1. Se muestran gráficos de barras o líneas con datos por hora.
+2. Se pueden comparar datos entre períodos distintos.
+3. Los datos se pueden visualizar en tabla y gráfico simultáneamente.
+RF Relacionados
+RF-21, RF-24, RF-36
+Estimación (Story Points)
+5 puntos (Media complejidad)
+
+HU-07: Alertas por anomalías
+Historia de Usuario
+Como gerente de operaciones, quiero recibir alertas cuando haya demasiados camiones en planta, un camión permanezca más tiempo del esperado, o se detecte una inconsistencia en los registros, para prevenir problemas operativos.
+Criterios de Aceptación
+1. Se define un umbral máximo configurable de camiones simultáneos.
+2. Se define un tiempo máximo de permanencia.
+3. Se genera alerta de inconsistencia ante ingresos duplicados o salidas sin ingreso previo.
+4. Las alertas son visibles en el dashboard.
+RF Relacionados
+RF-26, RF-27, RF-29, RF-30
+Estimación (Story Points)
+5 puntos (Media complejidad)
+
+HU-08: Monitoreo de sensores
+Historia de Usuario
+Como administrador del sistema, quiero ver el estado de conexión de cada ESP32-CAM en tiempo real, para detectar rápidamente fallas de hardware o conectividad.
+Criterios de Aceptación
+1. El dashboard muestra el estado online/offline de cada dispositivo.
+2. Se genera alerta al perder conexión por más de un tiempo definido.
+3. Se registran logs de conectividad del dispositivo.
+RF Relacionados
+RF-23, RF-28, RF-18
+Estimación (Story Points)
+5 puntos (Media complejidad)
+
+HU-09: Reportes exportables
+Historia de Usuario
+Como jefe de logística, quiero generar reportes diarios con el resumen de actividad y poder exportarlos en PDF o CSV, para compartirlos con la gerencia.
+Criterios de Aceptación
+1. Se genera reporte con total de ingresos, salidas, tiempo promedio y hora pico.
+2. Se puede exportar en formato CSV o PDF.
+3. Los reportes se pueden generar para cualquier rango de fechas.
+RF Relacionados
+RF-34, RF-35
+Estimación (Story Points)
+5 puntos (Media complejidad)
+
+HU-10: Monitoreo remoto
+Historia de Usuario
+Como gerente general, quiero acceder al estado de la planta desde cualquier lugar con conexión a internet, para supervisar las operaciones sin estar físicamente presente.
+Criterios de Aceptación
+1. El dashboard es accesible vía web desde fuera de la red local (Firebase Hosting).
+2. La conexión es segura (autenticación de usuario con Firebase Auth).
+3. La interfaz es responsive (funciona en celular y PC).
+RF Relacionados
+RF-25, RF-37
+Estimación (Story Points)
+3 puntos (Baja complejidad)
+
+HU-11: Gestión de usuarios y roles
+Historia de Usuario
+Como administrador del sistema, quiero gestionar los usuarios que acceden al dashboard con diferentes niveles de permisos, para controlar quién puede configurar el sistema y quién solo puede visualizar datos.
+Criterios de Aceptación
+1. Se pueden crear usuarios con correo y contraseña.
+2. Existen al menos dos roles: Administrador y Supervisor.
+3. Se registra un log de auditoría de las acciones de cada usuario.
+RF Relacionados
+RF-37, RF-38, RF-39
+Estimación (Story Points)
+5 puntos (Media complejidad)
+
+HU-12: Filtrado de falsos positivos
+Historia de Usuario
+Como administrador del sistema, quiero que el sistema descarte automáticamente las detecciones que no correspondan a camiones registrados (personas, autos no autorizados), para evitar registros basura en la base de datos.
+Criterios de Aceptación
+1. Si Plate Recognizer no detecta patente (confianza < 80%), el evento se descarta.
+2. Si la patente no está registrada en el sistema, se registra como vehículo no autorizado y se genera alerta.
+3. El umbral de confianza es configurable.
+RF Relacionados
+RF-12, RF-43
+Estimación (Story Points)
+3 puntos (Baja complejidad)
+
+HU-13: Registro manual de respaldo
+Historia de Usuario
+Como operador de portón, quiero poder registrar manualmente el ingreso o salida de un camión cuando la cámara o la API no funcionen, para no perder el registro de movimientos.
+Criterios de Aceptación
+1. Existe un formulario para registro manual con los campos requeridos.
+2. El registro manual se almacena con la misma estructura que el automático.
+3. Se marca el registro como 'manual' para diferenciarlo.
+RF Relacionados
+RF-13
+Estimación (Story Points)
+2 puntos (Muy baja complejidad)
+
+HU-14: Resiliencia ante desconexiones
+Historia de Usuario
+Como administrador del sistema, quiero que el ESP32-CAM almacene datos localmente cuando no haya internet y los sincronice al reconectarse, para no perder información crítica.
+Criterios de Aceptación
+1. El buffer local almacena eventos mientras no hay conexión.
+2. Al restablecerse la conexión, los datos se sincronizan automáticamente.
+3. Se valida la integridad de los datos sincronizados (sin duplicados).
+RF Relacionados
+RF-16, RF-17
+Estimación (Story Points)
+8 puntos (Alta complejidad)
+
+HU-15: Configuración del sistema
+Historia de Usuario
+Como administrador del sistema, quiero poder configurar los umbrales de alertas, los puntos de acceso y los parámetros de captura, para adaptar el sistema a las necesidades cambiantes de la planta.
+Criterios de Aceptación
+1. Se pueden modificar umbrales de alerta desde el dashboard.
+2. Se pueden agregar o eliminar puntos de acceso.
+3. Se puede ajustar el umbral de confianza mínimo de Plate Recognizer.
+RF Relacionados
+RF-40, RF-41, RF-42, RF-43
+Estimación (Story Points)
+3 puntos (Baja complejidad)
+
+HU-16: Control de barrera vehicular
+Historia de Usuario
+Como supervisor de planta, quiero que la barrera del portón se abra automáticamente cuando un camión autorizado es detectado, y también poder abrirla manualmente desde el dashboard o con un botón físico en caso de emergencia, para controlar el acceso de forma segura y flexible.
+Criterios de Aceptación
+1. En modo automático, la barrera se abre solo si el vehículo está autorizado y se cierra tras un tiempo configurable.
+2. En modo manual remoto, el supervisor puede abrir/cerrar la barrera desde el dashboard.
+3. En modo manual físico, un botón pulsador en el portón permite apertura inmediata.
+4. Cada apertura se registra con el modo utilizado y el usuario que autorizó.
+5. El dashboard muestra el estado actual de la barrera (abierta/cerrada) en tiempo real.
+RF Relacionados
+RF-44, RF-45, RF-46, RF-47, RF-48, RF-49, RF-50, RF-51
+Estimación (Story Points)
+8 puntos (Alta complejidad)
+
+
+6. Hitos del Proyecto
+Se definen los siguientes hitos clave del proyecto, asociados a los entregables intermedios y finales:
+
+ID
+Hito
+Fecha
+Entregable
+H-01
+Entrega del Plan del Proyecto
+Semana 2
+Documento con análisis de requerimientos, objetivos, cronograma y roles definidos.
+H-02
+Entrega del Diseño Conceptual
+Semana 5
+Compendio técnico con arquitectura, tecnologías y diseño de interfaz.
+H-03
+Prototipo IoT Funcional
+Semana 8
+ESP32-CAM con sensor IR capturando patentes y enviando datos a Firebase.
+H-04
+Dashboard Operativo
+Semana 11
+Panel web Vue.js con visualización en tiempo real, gráficos y alertas.
+H-05
+Integración Completa
+Semana 12
+Sistema completo integrado: ESP32-CAM + Plate Recognizer + Firebase + Dashboard.
+H-06
+Pruebas y Corrección
+Semana 14
+Pruebas de estrés, usabilidad y corrección de errores detectados.
+H-07
+Demostración y Entrega Final
+Semana 16
+Demostración en laboratorio del prototipo funcional e informe técnico final.
+
+7. Cronograma del Proyecto (Carta Gantt)
+El siguiente cronograma presenta la distribución temporal de las fases y tareas del proyecto a lo largo de 16 semanas:
+
+Fase / Tarea
+S1
+S2
+S3
+S4
+S5
+S6
+S7
+S8
+S9
+S10
+S11
+S12
+S13
+S14
+S15
+S16
+Etapa I: Planificación
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Análisis de requerimientos
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Definición de objetivos e hitos
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Carta Gantt y asignación de roles
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Entrega Avance #1 (Plan)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Etapa II: Diseño
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Diagrama de arquitectura
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Selección de tecnologías
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Diseño de interfaz de usuario
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Entrega Avance #2 (Diseño)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Etapa III: Implementación
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Desarrollo hardware IoT (ESP32-CAM)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Integración con Firebase + Plate Recognizer
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Desarrollo dashboard (Vue.js)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Sistema de alertas y reportes
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Etapa IV: Pruebas y Entrega
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Pruebas integrales
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Corrección de errores
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Documentación final
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Demostración y entrega final
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+8. Asignación de Roles y Equipo de Trabajo
+El equipo de trabajo se organiza siguiendo la metodología ágil Kanban, con roles definidos según las fortalezas individuales y la dinámica real de trabajo del grupo. Dado que los integrantes avanzan de forma asíncrona y se reúnen presencialmente según disponibilidad, Kanban permite gestionar el flujo de trabajo de manera flexible sin depender de reuniones sincrónicas obligatorias:
+
+Rol
+Responsabilidades
+Integrante
+Líder Técnico / Coordinador
+Administrar el tablero Kanban en Trello. Coordinar al equipo de forma asíncrona. Revisar y validar entregables. Resolver bloqueos técnicos.
+[Nombre Integrante 1]
+Desarrollador IoT / Hardware
+Programar el ESP32-CAM con Arduino IDE. Configurar sensor IR y cámara OV2640. Integrar Plate Recognizer API. Implementar buffer local y reconexiones WiFi.
+[Nombre Integrante 2]
+Desarrollador Backend / Cloud
+Configurar Firebase (Realtime DB, Auth, Hosting). Diseñar estructura de datos y reglas de seguridad. Implementar lógica de alertas y logs.
+[Nombre Integrante 3]
+Desarrollador Frontend / Dashboard
+Desarrollar el dashboard con Vue.js 3 + vue-chartjs. Implementar semáforo, gráficos, tablas y filtros. Asegurar diseño responsive y usabilidad.
+[Nombre Integrante 4]
+Analista / Documentador / QA
+Elaborar documentación del proyecto. Realizar pruebas funcionales y de usabilidad. Registrar errores en el tablero Kanban. Preparar presentaciones.
+[Nombre Integrante 5]
+
+8.1 Metodología de Trabajo: Kanban
+El equipo utilizará Kanban como marco de trabajo ágil. A diferencia de Scrum, Kanban no requiere ceremonias sincrónicas obligatorias ni sprints fijos, lo que se adapta a la realidad del equipo donde cada integrante avanza según su disponibilidad y las reuniones presenciales no siempre cuentan con la totalidad del grupo.
+
+8.2 Tablero Kanban (Trello)
+Se utilizará Trello como herramienta digital para gestionar el flujo de trabajo. El tablero se estructura con las siguientes columnas:
+
+Backlog: Todas las tareas identificadas del proyecto, priorizadas por el Líder Técnico según la etapa actual y los plazos de entrega.
+To Do (Esta Semana): Tareas seleccionadas del Backlog para ser abordadas en la semana en curso. Cada tarea tiene un responsable asignado y fecha límite.
+En Progreso: Tareas que un integrante tomó y está desarrollando activamente. Límite WIP (Work In Progress): máximo 2 tareas por persona.
+En Revisión: Tareas terminadas que requieren revisión de al menos otro integrante antes de darse por completadas.
+Hecho: Tareas revisadas, aprobadas y completadas.
+
+8.3 Reglas de Trabajo del Equipo
+
+1. Cada tarjeta en Trello debe tener: título descriptivo, responsable asignado, fecha límite y etiqueta de color por módulo (azul: IoT/Hardware, verde: Dashboard/Frontend, naranja: Backend/Cloud, morado: Documentación/QA, rojo: urgente).
+2. Ningún integrante puede tener más de 2 tarjetas en “En Progreso” simultáneamente.
+3. Toda tarea debe pasar por “En Revisión” antes de moverse a “Hecho”.
+4. La comunicación diaria se realiza por grupo de WhatsApp o Discord.
+5. Las reuniones presenciales se aprovechan para resolver bloqueos, integrar componentes y revisar el estado general del tablero.
+6. Antes de cada fecha de entrega, el Líder Técnico convoca una reunión de cierre para consolidar el entregable.
+
+8.4 Justificación de la Elección de Kanban
+Se seleccionó Kanban por sobre Scrum considerando las siguientes razones prácticas del equipo:
+
+•  El equipo no siempre puede reunirse completo, lo que dificulta las ceremonias sincrónicas que exige Scrum.
+•  Cada integrante avanza en horarios distintos según su disponibilidad, y Kanban permite el trabajo asíncrono de forma natural.
+•  El tablero visual facilita que cualquier integrante vea el estado completo del proyecto en cualquier momento.
+•  El límite WIP evita la sobrecarga individual y obliga a terminar tareas antes de tomar nuevas.
+•  La columna de “En Revisión” introduce un control de calidad natural que compensa la falta de experiencia previa del equipo en trabajo colaborativo de desarrollo.

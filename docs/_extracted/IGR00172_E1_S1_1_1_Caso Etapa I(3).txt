@@ -1,0 +1,61 @@
+INTEGRACIÓN DE COMPETENCIAS III: Parte 1
+Caso de Estudio: Desarrollo y Gestión de una Solución Prototipada para la Industria 4.0
+Descripción del Caso Una pequeña empresa manufacturera está en proceso de modernización y busca implementar soluciones tecnológicas innovadoras para optimizar la gestión de su logística y el control de accesos en tiempo real. Con el fin de mejorar la eficiencia operativa y la toma de decisiones basada en datos, la gerencia ha solicitado el desarrollo de un prototipo funcional que permita la gestión y monitoreo del ingreso y salida de camiones a la planta industrial mediante tecnologías emergentes de la Industria 4.0, como el Internet de las Cosas (IoT) y la gestión de datos en la nube.
+El equipo de desarrollo deberá abordar el desafío mediante una metodología ágil, diseñando e implementando una solución viable que permita capturar, procesar y visualizar datos en tiempo real, facilitando la supervisión remota de la logística de transporte. La implementación de este prototipo será clave para demostrar la viabilidad de la modernización y su impacto en la productividad de la empresa.
+
+Actividades y Entregables
+Actividad 1.2: Análisis de Requerimientos y Planificación del Proyecto (Trabajo en Casa)
+Descripción: 
+Definir el problema y sus implicaciones dentro del contexto de la manufactura.
+Establecer objetivos específicos para la solución propuesta.
+Identificar hitos clave del proyecto y estructurar un cronograma de trabajo mediante una Carta Gantt.
+Definir los roles y tareas de los miembros del equipo siguiendo una metodología ágil (SCRUM o Kanban).
+Entrega: Documento en PDF con el plan del proyecto.
+Competencia Evaluada: CE1N4.
+Actividad 1.3: Diseño del Prototipo (Trabajo en Casa)
+Descripción: 
+Elaborar un diagrama de arquitectura del sistema, incluyendo hardware, software y comunicaciones.
+Seleccionar y justificar las tecnologías más adecuadas para la solución, considerando sensores, plataformas IoT, almacenamiento en la nube y herramientas de análisis de datos.
+Diseñar una propuesta de interfaz de usuario que permita la visualización y gestión eficiente de la información obtenida.
+Entrega: Presentación en PDF o PowerPoint con el diseño conceptual y las justificaciones técnicas.
+Competencia Evaluada: CE5N4.
+Actividad 1.4: Implementación del Prototipo (Laboratorio de Informática)
+Descripción: 
+Desarrollar una versión funcional del prototipo empleando microcontroladores IoT como Arduino o ESP32.
+Simular la adquisición de datos utilizando sensores virtuales o físicos.
+Integrar la solución con una plataforma en la nube, como Firebase o ThingSpeak.
+Implementar un panel básico para la visualización de los datos recolectados.
+Producto Final: 
+Demostración en laboratorio del funcionamiento del prototipo.
+Informe breve que describa el proceso de desarrollo y los resultados obtenidos.
+Competencias Evaluadas: CE1N4 y CE5N4.
+
+Entregables Finales:
+Documento con el plan del proyecto.
+Presentación con el diseño conceptual.
+Prototipo funcional y breve informe técnico.
+
+ID
+REQUERIMIENTO FUNCIONAL
+DESCRIPCIÓN
+RF-01
+Análisis de Requerimientos y Planificación del Proyecto
+- Definir el problema y sus implicaciones dentro del contexto de la manufactura.
+- Establecer objetivos específicos para la solución propuesta.
+- Identificar hitos clave del proyecto y estructurar un cronograma de trabajo mediante una Carta Gantt.
+- Definir los roles y tareas de los miembros del equipo siguiendo una metodología ágil (SCRUM o Kanban).
+- Desarrollar documento con el plan del proyecto
+RF-02
+Diseño del Prototipo
+- Elaborar un diagrama de arquitectura del sistema, incluyendo hardware, software y comunicaciones.
+- Seleccionar y justificar las tecnologías más adecuadas para la solución, considerando sensores, plataformas IoT, almacenamiento en la nube y herramientas de análisis de datos.
+- Diseñar una propuesta de interfaz de usuario que permita la visualización y gestión eficiente de la información obtenida.
+- Realizar Documento en PDF o PowerPoint con el diseño conceptual y las justificaciones técnicas.
+RF-03
+Implementación del Prototipo
+- Desarrollar una versión funcional del prototipo empleando microcontroladores IoT como Arduino o ESP32.
+- Simular la adquisición de datos utilizando sensores virtuales o físicos.
+- Integrar la solución con una plataforma en la nube, como Firebase o ThingSpeak.
+- Implementar un panel básico para la visualización de los datos recolectados.
+- Realizar Demostración en laboratorio del funcionamiento del prototipo.
+- Construir Informe breve que describa el proceso de desarrollo y los resultados obtenidos.

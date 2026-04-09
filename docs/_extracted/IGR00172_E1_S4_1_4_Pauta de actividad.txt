@@ -1,0 +1,54 @@
+INTEGRACIÓN DE COMPETENCIAS III
+Pauta de actividad: 1.4: Avance #3
+ANTECEDENTES GENERALES
+
+Recinto:
+Laboratorio.
+Competencia:
+CE5N4: Desarrollar soluciones a problemáticas contextualizadas de la industria y/o sociedad, a través del prototipado, utilizando, difundiendo y evaluando tecnologías emergentes relacionadas a la industria 4.0.
+Criterios de evaluación:
+Habilidad en el Prototipado.
+Uso y difusión de tecnología.
+Evaluación de Soluciones y Resultado.
+
+PRESENTACIÓN DE LA ACTIVIDAD 
+
+En esta actividad, los y las estudiantes deberán implementar una versión funcional básica del prototipo diseñado, validando su factibilidad técnica mediante pruebas en un entorno controlado. Para ello, deberán programar microcontroladores IoT, simular o adquirir datos desde sensores, enviar esta información a una plataforma en la nube, y visualizarla a través de un panel de monitoreo. Esta actividad representa un hito práctico clave en el desarrollo del proyecto tecnológico grupal y permitirá integrar aprendizajes de programación, electrónica e interconectividad.
+
+INSTRUCCIONES
+
+Debe trabajar de manera grupal (5 personas).
+Utiliza los recursos del laboratorio: kits de desarrollo, sensores reales o virtuales, conexión a internet y computadores.
+Completa un informe técnico breve con:
+Capturas del sistema funcionando
+Descripción del funcionamiento
+Problemas detectados y soluciones aplicadas
+Sube el informe al Aula Virtual antes de la fecha establecida.
+
+DESARROLLO DE LA ACTIVIDAD
+
+Avance #3
+Configura el entorno de trabajo, instalando los drivers y el software de programación necesario (IDE Arduino, Visual Studio Code u otros), asegurando la correcta conexión del microcontrolador.
+
+Implementa una versión funcional básica del prototipo, conectando el microcontrolador con los sensores reales o virtuales definidos en el diseño.
+Programa el microcontrolador para la lectura de datos desde los sensores, verificando que las mediciones sean coherentes con el funcionamiento esperado.
+Realiza pruebas iniciales de funcionamiento, comprobando la correcta adquisición de datos y el comportamiento general del prototipo.
+Identifica posibles errores, fallas u oportunidades de mejora detectadas durante las pruebas realizadas.
+Aplica las correcciones o ajustes necesarios, considerando la retroalimentación entregada por el o la docente.
+Documenta el proceso de implementación y las pruebas realizadas, registrando los resultados obtenidos y las mejoras aplicadas.
+Entrega el avance solicitado en el Aula Virtual y prepárate para recibir retroalimentación para la siguiente etapa del proyecto
+Requerimientos
+
+RF-03
+Implementación del Prototipo
+- Desarrollar una versión funcional del prototipo empleando microcontroladores IoT como Arduino o ESP32.
+- Simular la adquisición de datos utilizando sensores virtuales o físicos.
+- Integrar la solución con una plataforma en la nube, como Firebase o ThingSpeak.
+- Implementar un panel básico para la visualización de los datos recolectados.
+- Realizar Demostración en laboratorio del funcionamiento del prototipo.
+- Construir Informe breve que describa el proceso de desarrollo y los resultados obtenidos.
+
+Preguntas de cierre:
+¿Qué aprendiste de la actividad realizada? 
+¿En qué ámbitos puedes utilizar o aplicar lo realizado en la actividad? 
+¿Hubo algún término, definición o parte del proceso que necesites reforzar? ¿Cuál? 
