@@ -1,7 +1,7 @@
 {
   "meta": {
     "schemaVersion": 2,
-    "updatedAt": "2026-04-08T23:55:00Z"
+    "updatedAt": "2026-04-09T00:00:00Z"
   },
   "devices": {
     "ESP32-GATE-001": {
@@ -14,10 +14,12 @@
       "firmware": "v2.0.0",
       "lastSeen": "2026-04-08T23:55:00Z",
       "telemetry": {
-        "approachDistanceCm": 165.4,
-        "safetyDistanceCm": 220.1,
-        "presenceDetected": false,
-        "safetyBlocked": false,
+        "entryDistanceCm": 165.4,
+        "exitDistanceCm": 220.1,
+        "entrySensorActive": false,
+        "exitSensorActive": false,
+        "crossingDirection": "none",
+        "crossingState": "idle",
         "barrierStatus": "cerrada",
         "uptimeMs": 182340
       },
@@ -45,9 +47,12 @@
         "deviceId": "ESP32-GATE-001",
         "accessPoint": "porton_norte",
         "capturedAt": "2026-04-08T23:30:40Z",
-        "trigger": "presence_rising_edge",
-        "approachDistanceCm": 140.2,
-        "safetyDistanceCm": 284.9,
+        "trigger": "entry_rising_edge",
+        "directionHint": "ingreso",
+        "entryDistanceCm": 140.2,
+        "exitDistanceCm": 284.9,
+        "entrySensorActive": true,
+        "exitSensorActive": false,
         "mode": "automatico",
         "requiresAuthorization": true,
         "firmware": "v2.0.0"
@@ -151,18 +156,20 @@
     "barrierAutoCloseSeconds": 5
   },
   "users": {
-    "uid-demo-admin": {
-      "id": "uid-demo-admin",
-      "name": "Admin Demo",
+    "__UID_ADMIN_AUTH__": {
+      "id": "__UID_ADMIN_AUTH__",
+      "name": "Administrador",
       "email": "admin@logigate.cl",
       "role": "admin",
+      "status": "activo",
       "lastLoginAt": "2026-04-08T20:10:00Z"
     },
-    "uid-demo-supervisor": {
-      "id": "uid-demo-supervisor",
-      "name": "Supervisor Demo",
+    "__UID_SUPERVISOR_AUTH__": {
+      "id": "__UID_SUPERVISOR_AUTH__",
+      "name": "Supervisor",
       "email": "supervisor@logigate.cl",
       "role": "supervisor",
+      "status": "activo",
       "lastLoginAt": "2026-04-08T19:55:00Z"
     }
   }

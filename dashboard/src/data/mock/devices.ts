@@ -23,7 +23,7 @@ export const mockDevices: Device[] = [
   },
   {
     id: 'US-APP-001',
-    name: 'Sensor ultrasonico aproximacion Norte',
+    name: 'Sensor ultrasonico entrada Norte',
     type: 'sensor_ultrasonico',
     accessPoint: 'Portón Norte',
     status: 'online',
@@ -33,7 +33,7 @@ export const mockDevices: Device[] = [
   },
   {
     id: 'US-SAFE-001',
-    name: 'Sensor ultrasonico seguridad Norte',
+    name: 'Sensor ultrasonico salida Norte',
     type: 'sensor_ultrasonico',
     accessPoint: 'Portón Norte',
     status: 'online',

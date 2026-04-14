@@ -19,6 +19,7 @@ const {
   lastUpdated,
   error,
   isRunning,
+  showIotDemoControls,
   lastScenarioLabel,
   lastRunAt,
   isLoading,
@@ -61,6 +62,7 @@ function saveDevice(payload: Parameters<typeof devicesStore.addDevice>[0]) {
   <DashboardShell
     title="Control y estado IoT"
     :subtitle="`Ultima actualizacion: ${formatDateTime(lastUpdated)}`"
+    :show-iot-demo-controls="showIotDemoControls"
     :is-running="isRunning"
     :last-scenario-label="lastScenarioLabel"
     :last-run-label="lastRunAt ? formatDateTime(lastRunAt) : ''"

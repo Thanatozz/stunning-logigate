@@ -24,7 +24,7 @@ El circuito simulado en Wokwi reproduce la lógica de hardware del sistema de co
 [Insertar captura de pantalla aquí]
 Figura 1: Circuito completo simulado en Wokwi con todos los componentes conectados al ESP32.
 [Insertar captura de pantalla aquí]
-Figura 2: Detalle de las conexiones de los sensores ultras?nicos HC-SR04 y el servo motor en Wokwi.
+Figura 2: Detalle de las conexiones de los sensores ultrasónicos HC-SR04 y el servo motor en Wokwi.
 3.2 Diferencias entre Simulación y Prototipo Real
 4. Firmware — Lógica Implementada
 El firmware se desarrolló en C/C++ compatible con Arduino IDE y se ejecutó en el simulador Wokwi. Aunque la simulación no incluye cámara ni conexión real a APIs, la lógica completa del sistema está implementada y validada mediante el monitor serial.
@@ -129,11 +129,11 @@ La simulación en Wokwi valida la lógica del sistema pero presenta las siguient
 •  No se puede conectar a APIs externas reales (Plate Recognizer) desde Wokwi.
 •  No se puede conectar a Firebase Realtime Database. La lógica de estado se implementó con variables locales en el ESP32.
 •  No se puede implementar el dashboard Vue.js conectado en tiempo real. Se presentaron mockups con datos esperados.
-•  Los sensores PIR de Wokwi tienen comportamiento ligeramente diferente a los sensores ultras?nicos HC-SR04 de obstáculo físicos.
+•  Los sensores PIR de Wokwi tienen comportamiento ligeramente diferente a los sensores ultrasónicos HC-SR04 de obstáculo físicos.
 •  La alimentación eléctrica no es un factor en simulación (en el prototipo real, el ESP32-CAM requiere 5V 2A).
 9.2 Próximos Pasos para el Prototipo Físico
 Para evolucionar de la simulación al prototipo físico funcional, se deben completar las siguientes tareas:
-1. Adquirir el hardware real (ESP32-CAM + sensores ultras?nicos HC-SR04 + servo + protoboard).
+1. Adquirir el hardware real (ESP32-CAM + sensores ultrasónicos HC-SR04 + servo + protoboard).
 2. Migrar el firmware de Wokwi a Arduino IDE, reemplazando los datos hardcodeados por la integración real con Plate Recognizer API.
 3. Configurar Firebase (Realtime Database, Authentication, Hosting) e integrar con el firmware.
 4. Desarrollar el dashboard Vue.js con los composables de Firebase para actualización en tiempo real.
@@ -142,17 +142,17 @@ Para evolucionar de la simulación al prototipo físico funcional, se deben comp
 7. Desplegar el dashboard en Firebase Hosting para acceso remoto.
 10. Conclusiones
 La simulación del prototipo en Wokwi valida la factibilidad técnica de la lógica central del sistema de monitoreo de acceso vehicular. A pesar de las limitaciones inherentes del simulador (ausencia de cámara, APIs y conectividad cloud), se logró demostrar el correcto funcionamiento de los siguientes aspectos críticos:
-•  La detección bidireccional con dos sensores ultras?nicos HC-SR04 funciona correctamente, activando la secuencia de procesamiento sin importar la dirección de aproximación del vehículo.
+•  La detección bidireccional con dos sensores ultrasónicos HC-SR04 funciona correctamente, activando la secuencia de procesamiento sin importar la dirección de aproximación del vehículo.
 •  La lógica de stateful event detection (ingreso/salida por estado) opera según lo diseñado, determinando correctamente el tipo de evento y calculando tiempos de permanencia.
 •  El filtrado de falsos positivos en dos capas (confianza OCR + patente registrada) descarta efectivamente los eventos inválidos.
 •  El control de barrera funciona en sus tres modos: automático (vehículo autorizado), manual físico (botón de emergencia) y manual remoto (comando serial simulando dashboard).
 •  Los indicadores LED reflejan correctamente el estado del sistema (verde = autorizado, rojo = no autorizado/alerta).
 La simulación sirve como base sólida para la implementación del prototipo físico, ya que la lógica del firmware está validada y solo requiere reemplazar los datos simulados por las integraciones reales (cámara, Plate Recognizer, Firebase). La arquitectura modular del código facilita esta transición sin necesidad de reescribir la lógica de negocio.
-Criterio de consistencia aplicado: prototipo de 1 carril con dos sensores ultras?nicos HC-SR04 instalados en el mismo lado f?sico del port?n, c?mara fija y l?gica de direcci?n (ingreso/salida) resuelta por software mediante estado del veh?culo.
+Criterio de consistencia aplicado: prototipo de 1 carril con dos sensores ultrasónicos HC-SR04 instalados en el mismo lado físico del portón, cámara fija y lógica de dirección (ingreso/salida) resuelta por software mediante estado del vehículo.
 
 [Tabla 0]
 Herramienta | Descripción y Configuración
-Wokwi (wokwi.com) | Simulador en línea de microcontroladores. Se utilizó para simular el circuito ESP32 con sensores ultras?nicos HC-SR04, servo motor, botón y LEDs. Permite escribir y ejecutar código Arduino/C++ directamente en el navegador.
+Wokwi (wokwi.com) | Simulador en línea de microcontroladores. Se utilizó para simular el circuito ESP32 con sensores ultrasónicos HC-SR04, servo motor, botón y LEDs. Permite escribir y ejecutar código Arduino/C++ directamente en el navegador.
 ESP32 (simulado en Wokwi) | Placa ESP32 genérica disponible en Wokwi. Simula los GPIO, WiFi (limitado), y el monitor serial. Reemplaza al ESP32-CAM físico para efectos de la simulación.
 Arduino IDE / Editor Wokwi | El código se desarrolló en el editor integrado de Wokwi, compatible con sintaxis Arduino C/C++. Librerías utilizadas: ESP32Servo, ArduinoJson.
 Componentes simulados | 2x sensor PIR/IR (simula sensores de obstáculo), 1x servo motor SG90 (barrera), 1x push button (apertura manual), 2x LED (indicadores de estado), resistencias pull-down.
@@ -160,8 +160,8 @@ Monitor Serial (Wokwi) | Utilizado para visualizar los mensajes de debug del fir
 
 [Tabla 1]
 Componente Wokwi | Pin Componente | GPIO ESP32 | Función en el Sistema Real
-Sensor ultras?nico S1 | OUT | GPIO 13 | Simula sensor IR exterior — detecta vehículo acercandose desde afuera del portón
-Sensor ultras?nico S2 | OUT | GPIO 14 | Simula sensor IR interior — detecta vehículo acercandose desde adentro del portón
+Sensor ultrasúnico S1 | OUT | GPIO 13 | Simula sensor IR exterior — detecta vehículo acercandose desde afuera del portón
+Sensor ultrasúnico S2 | OUT | GPIO 14 | Simula sensor IR interior — detecta vehículo acercandose desde adentro del portón
 Servo Motor SG90 | Señal PWM | GPIO 12 | Simula barrera vehicular — gira a 90° para abrir, vuelve a 0° para cerrar
 Push Button | Terminal | GPIO 15 | Simula botón de emergencia físico — apertura manual instantánea de la barrera
 LED Verde | Ánodo | GPIO 2 | Indicador de estado — encendido = vehículo autorizado / barrera abierta
@@ -173,7 +173,7 @@ Microcontrolador | ESP32 genérico (sin cámara) | ESP32-CAM AI-Thinker (con OV2
 Detección de patente | Patentes hardcodeadas en el código (simuladas) | Cámara OV2640 + Plate Recognizer API (OCR real)
 Base de datos | Estado simulado en variables locales del ESP32 | Firebase Realtime Database (sincronización en tiempo real)
 Dashboard | No implementado (se muestran mockups con datos esperados) | Vue.js 3 + vue-chartjs conectado a Firebase en tiempo real
-Sensores | Sensores ultras?nicos simulados en Wokwi (S1 y S2, mismo lado f?sico). | Sensores IR de obstáculo físicos (GPIO 13 y 14)
+Sensores | Sensores ultrasónicos simulados en Wokwi (S1 y S2, mismo lado físico). | Sensores IR de obstáculo físicos (GPIO 13 y 14)
 Barrera | Servo SG90 simulado en Wokwi (visual) | Servo SG90 físico en protoboard
 Comunicación | Monitor serial (mensajes de debug) | HTTPS (TLS 1.2+) a Firebase y Plate Recognizer
 Lógica ingreso/salida | Stateful event detection en memoria local | Stateful event detection consultando Firebase
@@ -201,8 +201,8 @@ XX-9999 | (no registrado) | No | Alerta + barrera NO abre
 
 [Tabla 5]
 # | Problema Detectado | Causa Identificada | Solución Aplicada
-1 | Jitter del servo al abrir/cerrar la barrera en simulaci?n. | Ciclo de control sin filtro temporal y actualizaci?n demasiado frecuente del servo. | Se agreg? ventana de estabilizaci?n y temporizador de cierre controlado para evitar oscilaciones.
-2 | Aperturas manuales repetidas por rebote del pulsador. | Lectura directa del bot?n sin antirrebote por software. | Se implement? debounce por tiempo y validaci?n de flanco para una sola apertura por pulsaci?n.
-3 | Falsos disparos de detecci?n en secuencias r?pidas. | Ausencia de confirmaci?n cruzada entre sensores de proximidad. | Se defini? l?gica S1 (disparo) + S2 (confirmaci?n) y cooldown entre eventos consecutivos.
-4 | Inconsistencias al clasificar ingreso/salida durante pruebas continuas. | Actualizaci?n tard?a del estado local de veh?culos presentes. | Se reorden? el flujo para actualizar estado inmediatamente despu?s de validar patente y evento.
-5 | Diferencias entre lecturas simuladas y comportamiento esperado en terreno. | El simulador Wokwi no reproduce completamente ruido f?sico y ecos espurios de ultrasonido. | Se document? calibraci?n pendiente (umbrales y tiempos) para pruebas con hardware real.
+1 | Jitter del servo al abrir/cerrar la barrera en simulación. | Ciclo de control sin filtro temporal y actualización demasiado frecuente del servo. | Se agregó ventana de estabilización y temporizador de cierre controlado para evitar oscilaciones.
+2 | Aperturas manuales repetidas por rebote del pulsador. | Lectura directa del botón sin antirrebote por software. | Se implementó debounce por tiempo y validación de flanco para una sola apertura por pulsación.
+3 | Falsos disparos de detección en secuencias rápidas. | Ausencia de confirmación cruzada entre sensores de proximidad. | Se definió lógica S1 (disparo) + S2 (confirmación) y cooldown entre eventos consecutivos.
+4 | Inconsistencias al clasificar ingreso/salida durante pruebas continuas. | Actualización tardía del estado local de vehículos presentes. | Se reordenó el flujo para actualizar estado inmediatamente después de validar patente y evento.
+5 | Diferencias entre lecturas simuladas y comportamiento esperado en terreno. | El simulador Wokwi no reproduce completamente ruido físico y ecos espurios de ultrasonido. | Se documentó calibración pendiente (umbrales y tiempos) para pruebas con hardware real.

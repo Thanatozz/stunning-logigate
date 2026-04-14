@@ -3,13 +3,14 @@ import { computed, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import AppSectionHeader from '@/components/common/AppSectionHeader.vue'
 import NoResultsState from '@/components/common/NoResultsState.vue'
+import TableSkeleton from '@/components/common/TableSkeleton.vue'
 import AlertsFilters from '@/components/alerts/AlertsFilters.vue'
 import AlertsTable from '@/components/alerts/AlertsTable.vue'
 import { useAlertsStore } from '@/stores/alerts.store'
 import type { AlertSeverity, AlertStatus, AlertType } from '@/types/domain'
 
 const alertsStore = useAlertsStore()
-const { filters, filteredAlerts } = storeToRefs(alertsStore)
+const { filters, filteredAlerts, isLoading } = storeToRefs(alertsStore)
 
 const pageSize = 10
 const currentPage = ref(1)
@@ -91,8 +92,10 @@ watch(totalPages, (value) => {
       v-model:status="statusModel"
     />
 
+    <TableSkeleton v-if="isLoading" :columns="6" :rows="8" />
+
     <NoResultsState
-      v-if="!filteredAlerts.length"
+      v-else-if="!filteredAlerts.length"
       title="No hay alertas para mostrar"
       message="Ajusta los filtros o espera nuevos eventos del sistema."
     />

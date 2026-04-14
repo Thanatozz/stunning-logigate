@@ -3,12 +3,13 @@ import { computed, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import AppSectionHeader from '@/components/common/AppSectionHeader.vue'
 import NoResultsState from '@/components/common/NoResultsState.vue'
+import TableSkeleton from '@/components/common/TableSkeleton.vue'
 import HistoryFilters from '@/components/history/HistoryFilters.vue'
 import RecordsTable from '@/components/history/RecordsTable.vue'
 import { useHistoryStore } from '@/stores/history.store'
 
 const historyStore = useHistoryStore()
-const { records, filters, filteredRecords } = storeToRefs(historyStore)
+const { records, filters, filteredRecords, isLoading } = storeToRefs(historyStore)
 
 const page = ref(1)
 const pageSize = 10
@@ -115,8 +116,10 @@ function prevPage() {
       :point-options="pointOptions"
     />
 
+    <TableSkeleton v-if="isLoading" :columns="6" :rows="9" />
+
     <NoResultsState
-      v-if="!filteredRecords.length"
+      v-else-if="!filteredRecords.length"
       title="Sin resultados"
       message="No existen registros para los filtros seleccionados."
     />

@@ -13,6 +13,7 @@ const {
   lastUpdated,
   error,
   isRunning,
+  showIotDemoControls,
   lastScenarioLabel,
   lastRunAt,
   isLoading,
@@ -29,6 +30,7 @@ const accessFeed = computed(() => recentActivity.value.slice(0, 10))
   <DashboardShell
     title="Dashboard de accesos"
     :subtitle="`Ultima actualizacion: ${formatDateTime(lastUpdated)}`"
+    :show-iot-demo-controls="showIotDemoControls"
     :is-running="isRunning"
     :last-scenario-label="lastScenarioLabel"
     :last-run-label="lastRunAt ? formatDateTime(lastRunAt) : ''"

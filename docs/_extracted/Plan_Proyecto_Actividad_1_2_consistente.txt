@@ -84,7 +84,7 @@ Se seleccionó Kanban por sobre Scrum considerando las siguientes razones práct
 •  El tablero visual facilita que cualquier integrante vea el estado completo del proyecto en cualquier momento.
 •  El límite WIP evita la sobrecarga individual y obliga a terminar tareas antes de tomar nuevas.
 •  La columna de “En Revisión” introduce un control de calidad natural que compensa la falta de experiencia previa del equipo en trabajo colaborativo de desarrollo.
-Criterio de consistencia aplicado: prototipo de 1 carril con dos sensores ultras?nicos HC-SR04 instalados en el mismo lado f?sico del port?n; detecci?n de direcci?n resuelta por software (estado del veh?culo) y manteniendo los modos bidireccional, solo entrada y solo salida por configuraci?n.
+Criterio de consistencia aplicado: prototipo de 1 carril con dos sensores ultrasónicos HC-SR04 instalados en el mismo lado físico del portón; detección de dirección resuelta por software (estado del vehículo) y manteniendo los modos bidireccional, solo entrada y solo salida por configuración.
 
 [Tabla 0]
 ID | Descripción
@@ -318,7 +318,7 @@ Estimación (Story Points) | 8 puntos (Alta complejidad)
 ID | Hito | Fecha | Entregable
 H-01 | Entrega del Plan del Proyecto | Semana 2 | Documento con análisis de requerimientos, objetivos, cronograma y roles definidos.
 H-02 | Entrega del Diseño Conceptual | Semana 5 | Compendio técnico con arquitectura, tecnologías y diseño de interfaz.
-H-03 | Prototipo IoT Funcional | Semana 8 | ESP32-CAM con dos sensores ultras?nicos HC-SR04 en el mismo lado f?sico, capturando patentes y enviando datos a Firebase.
+H-03 | Prototipo IoT Funcional | Semana 8 | ESP32-CAM con dos sensores ultrasónicos HC-SR04 en el mismo lado físico, capturando patentes y enviando datos a Firebase.
 H-04 | Dashboard Operativo | Semana 11 | Panel web Vue.js con visualización en tiempo real, gráficos y alertas.
 H-05 | Integración Completa | Semana 12 | Sistema completo integrado: ESP32-CAM + Plate Recognizer + Firebase + Dashboard.
 H-06 | Pruebas y Corrección | Semana 14 | Pruebas de estrés, usabilidad y corrección de errores detectados.

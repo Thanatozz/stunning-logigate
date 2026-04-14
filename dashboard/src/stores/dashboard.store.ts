@@ -36,6 +36,78 @@ export const useDashboardStore = defineStore('dashboard', () => {
     Math.round((plantState.value.currentCount / plantState.value.maxCapacity) * 100),
   )
 
+  function setKpiFromRemote(payload: Partial<KpiSummary>) {
+    kpi.value = {
+      trucksInPlant: Number(payload.trucksInPlant ?? kpi.value.trucksInPlant),
+      todayEntries: Number(payload.todayEntries ?? kpi.value.todayEntries),
+      todayExits: Number(payload.todayExits ?? kpi.value.todayExits),
+      avgStayMinutes: Number(payload.avgStayMinutes ?? kpi.value.avgStayMinutes),
+    }
+  }
+
+  function setPlantStateFromRemote(
+    payload: Partial<PlantState> & { trucksInside?: TruckInside[] },
+  ) {
+    const maxCapacity = Number(payload.maxCapacity ?? plantState.value.maxCapacity)
+    const currentCount = Number(payload.currentCount ?? payload.trucksInside?.length ?? plantState.value.currentCount)
+    const occupancyRaw = payload.occupancyLevel
+    const occupancyLevel: OccupancyLevel =
+      occupancyRaw === 'alto' || occupancyRaw === 'medio' || occupancyRaw === 'bajo'
+        ? occupancyRaw
+        : resolveOccupancyLevel(Math.round((currentCount / Math.max(1, maxCapacity)) * 100))
+
+    plantState.value = {
+      currentCount,
+      maxCapacity,
+      occupancyLevel,
+      trucksInside: payload.trucksInside ? [...payload.trucksInside] : [...plantState.value.trucksInside],
+    }
+
+    kpi.value.trucksInPlant = currentCount
+  }
+
+  function setActivityByHourFromRemote(payload: Record<string, unknown>) {
+    const entries = Object.entries(payload)
+      .map(([hour, value]) => {
+        const source = value && typeof value === 'object' ? (value as Record<string, unknown>) : {}
+        return {
+          hour,
+          entries: Number(source.entries ?? 0),
+          exits: Number(source.exits ?? 0),
+        }
+      })
+      .sort((a, b) => a.hour.localeCompare(b.hour))
+
+    if (entries.length) {
+      chartSeries.value = {
+        ...chartSeries.value,
+        activityByHour: entries,
+      }
+    }
+  }
+
+  function setRecentActivityFromRemote(items: RecentActivityItem[]) {
+    recentActivity.value = [...items]
+  }
+
+  function setDailySummaryFromRemote(payload: Partial<DailySummary>) {
+    dailySummary.value = {
+      totalEntries: Number(payload.totalEntries ?? dailySummary.value.totalEntries),
+      totalExits: Number(payload.totalExits ?? dailySummary.value.totalExits),
+      avgStayMinutes: Number(payload.avgStayMinutes ?? dailySummary.value.avgStayMinutes),
+      peakHour: String(payload.peakHour ?? dailySummary.value.peakHour),
+      occupancyRate: Number(payload.occupancyRate ?? dailySummary.value.occupancyRate),
+    }
+  }
+
+  function setLastUpdated(value?: string) {
+    lastUpdated.value = value ?? new Date().toISOString()
+  }
+
+  function setError(message: string) {
+    error.value = message
+  }
+
   function generatePlate() {
     const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
     const partA = letters[Math.floor(Math.random() * letters.length)] + letters[Math.floor(Math.random() * letters.length)]
@@ -165,5 +237,12 @@ export const useDashboardStore = defineStore('dashboard', () => {
     occupancyPercent,
     refreshSnapshot,
     addRecentActivity,
+    setKpiFromRemote,
+    setPlantStateFromRemote,
+    setActivityByHourFromRemote,
+    setRecentActivityFromRemote,
+    setDailySummaryFromRemote,
+    setLastUpdated,
+    setError,
   }
 })

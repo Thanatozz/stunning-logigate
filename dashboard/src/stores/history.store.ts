@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { mockAccessRecords } from '@/data/mock/records'
+import { isFirebaseConfigured } from '@/lib/firebase'
 import type { AccessRecord } from '@/types/domain'
 
 interface HistoryFilters {
@@ -12,7 +13,8 @@ interface HistoryFilters {
 }
 
 export const useHistoryStore = defineStore('history', () => {
-  const records = ref<AccessRecord[]>([...mockAccessRecords])
+  const records = ref<AccessRecord[]>(isFirebaseConfigured ? [] : [...mockAccessRecords])
+  const isLoading = ref(isFirebaseConfigured)
   const filters = ref<HistoryFilters>({
     dateFrom: '',
     dateTo: '',
@@ -58,11 +60,18 @@ export const useHistoryStore = defineStore('history', () => {
     }
   }
 
+  function setRecords(payload: AccessRecord[]) {
+    records.value = [...payload]
+    isLoading.value = false
+  }
+
   return {
     records,
+    isLoading,
     filters,
     filteredRecords,
     updateFilters,
     resetFilters,
+    setRecords,
   }
 })

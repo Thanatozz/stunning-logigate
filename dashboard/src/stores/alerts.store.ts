@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { mockAlerts } from '@/data/mock/alerts'
+import { isFirebaseConfigured } from '@/lib/firebase'
 import type { Alert, AlertSeverity, AlertStatus, AlertType } from '@/types/domain'
 
 interface AlertFilters {
@@ -19,7 +20,8 @@ export interface CreateAlertPayload {
 }
 
 export const useAlertsStore = defineStore('alerts', () => {
-  const alerts = ref<Alert[]>([...mockAlerts])
+  const alerts = ref<Alert[]>(isFirebaseConfigured ? [] : [...mockAlerts])
+  const isLoading = ref(isFirebaseConfigured)
   const filters = ref<AlertFilters>({
     type: '',
     severity: '',
@@ -77,8 +79,14 @@ export const useAlertsStore = defineStore('alerts', () => {
     active.status = 'resuelta'
   }
 
+  function setAlerts(payload: Alert[]) {
+    alerts.value = [...payload]
+    isLoading.value = false
+  }
+
   return {
     alerts,
+    isLoading,
     filters,
     filteredAlerts,
     activeAlerts,
@@ -87,5 +95,6 @@ export const useAlertsStore = defineStore('alerts', () => {
     ignoreAlert,
     createAlert,
     resolveLatestActiveByType,
+    setAlerts,
   }
 })

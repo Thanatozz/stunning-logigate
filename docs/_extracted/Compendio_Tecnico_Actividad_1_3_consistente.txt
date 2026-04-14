@@ -159,7 +159,7 @@ El diseño propuesto en este compendio técnico presenta una solución innovador
 La selección del ESP32-CAM como plataforma de hardware permite reducir significativamente los costos y la complejidad del prototipo, al integrar microcontrolador, cámara, WiFi y flash LED en un solo módulo. El uso de Plate Recognizer para el reconocimiento automático de patentes elimina la necesidad de intervención del conductor, diferenciando esta solución de los enfoques tradicionales basados en RFID.
 Firebase como plataforma cloud proporciona un ecosistema completo (base de datos en tiempo real, autenticación, hosting) que simplifica el desarrollo y reduce los costos a cero para un prototipo académico. El dashboard web responsive garantiza el acceso remoto desde cualquier dispositivo.
 Con un costo total estimado de $16 USD y todos los servicios de software gratuitos, el prototipo es viable tanto económicamente como técnicamente. La inclusión del control de barrera con tres modos de operación (automático, manual remoto y manual físico) demuestra la capacidad del sistema para gestionar el acceso vehicular de forma integral. La arquitectura está diseñada para escalar a un entorno productivo real mediante mejoras incrementales en el hardware (cámara de mayor resolución, barrera industrial, sensores especializados) y la plataforma cloud (planes pagados con mayor capacidad).
-Criterio de consistencia aplicado: arquitectura de port?n ?nico con dos sensores ultras?nicos HC-SR04 en el mismo lado f?sico, c?mara fija y l?gica de direcci?n por software para operaci?n bidireccional o por rol fijo (solo entrada / solo salida).
+Criterio de consistencia aplicado: arquitectura de portón único con dos sensores ultrasónicos HC-SR04 en el mismo lado físico, cámara fija y lógica de dirección por software para operación bidireccional o por rol fijo (solo entrada / solo salida).
 
 [Tabla 0]
 Criterio | ESP32-CAM | Arduino + Módulo WiFi
@@ -230,9 +230,9 @@ Gestión de Usuarios | ✓ | ✗
 
 [Tabla 7]
 Componente | Pin Componente | Pin ESP32-CAM | Observación
-Sensor ultras?nico HC-SR04 | VCC | 3.3V | Alimentación
-Sensor ultras?nico HC-SR04 | GND | GND | Tierra común
-Sensor ultras?nico HC-SR04 | OUT | GPIO 13 y GPIO 14 | Señal digital
+Sensor ultrasúnico HC-SR04 | VCC | 3.3V | Alimentación
+Sensor ultrasúnico HC-SR04 | GND | GND | Tierra común
+Sensor ultrasúnico HC-SR04 | OUT | GPIO 13 y GPIO 14 | Señal digital
 Cámara OV2640 | Ribbon 24-pin | Conector integrado | Interfaz DVP paralela
 Flash LED | (integrado) | GPIO 4 | Control por software
 Servo SG90 (barrera) | Señal PWM | GPIO 12 | Control barrera

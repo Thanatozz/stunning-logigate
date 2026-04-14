@@ -91,6 +91,7 @@ Implementar funciones:
 - `onDetectionCreated`: procesa `ingest/detections/*`.
 - `rebuildDashboardCache`: recalcula KPIs y series.
 - `onManualCommandAudit`: registra auditoria de comandos.
+- `deleteAuthUserByAdmin`: elimina usuarios de Firebase Auth cuando se borran desde dashboard (ver `docs/CLOUD_FUNCTION_DELETE_AUTH_USER.md`).
 
 ## Etapa D: Dashboard
 
@@ -114,7 +115,8 @@ Implementar funciones:
 - [ ] `state/currentCount` sube/baja segun ingreso/salida.
 - [ ] Dashboard refleja estado en tiempo real.
 - [ ] Comando remoto abre/cierra barrera.
-- [ ] Con sensor de seguridad bloqueado, cierre remoto se rechaza.
+- [ ] Si sensor de entrada o salida sigue activo, cierre remoto se rechaza.
+- [ ] Cierre automatico ocurre al completar secuencia entrada+salida.
 
 ## 8) Riesgos comunes y mitigacion
 

@@ -4,15 +4,15 @@ Este diagrama aplica al controlador IoT fisico del porton en arquitectura de un 
 
 ## 1) Logica fisica
 
-- Sensor 1 (aproximacion): detecta llegada de camion.
-- Sensor 2 (seguridad): evita cierre con obstaculo bajo barrera.
+- Sensor 1 (entrada): detecta llegada al lado de entrada.
+- Sensor 2 (salida): confirma que el camion cruzo completamente.
 - Servo: abre/cierra barrera.
 - Boton: control fisico cuando modo `manual_fisico`.
 
 ```mermaid
 flowchart LR
-  A[Sensor aproximacion] --> B[ESP32]
-  C[Sensor seguridad] --> B
+  A[Sensor entrada] --> B[ESP32]
+  C[Sensor salida] --> B
   D[Boton manual] --> B
   B --> E[Servo barrera]
   B <--> F[Firebase RTDB]
@@ -23,10 +23,10 @@ flowchart LR
 
 | Modulo | Senal | Pin ESP32 |
 |---|---|---|
-| HC-SR04 Aproximacion | TRIG | GPIO23 |
-| HC-SR04 Aproximacion | ECHO | GPIO22 |
-| HC-SR04 Seguridad | TRIG | GPIO21 |
-| HC-SR04 Seguridad | ECHO | GPIO19 |
+| HC-SR04 Entrada | TRIG | GPIO23 |
+| HC-SR04 Entrada | ECHO | GPIO22 |
+| HC-SR04 Salida | TRIG | GPIO21 |
+| HC-SR04 Salida | ECHO | GPIO19 |
 | Servo SG90 | PWM/SIG | GPIO18 |
 | Boton manual | IN (pull-up interno) | GPIO5 |
 
@@ -68,4 +68,13 @@ Usa divisor resistivo por cada `ECHO` (ejemplo 1k + 2k) o level shifter:
 ## 6) Recomendacion industrial (cuando pases de prototipo a campo)
 
 - Reemplazar HC-SR04 por radar FMCW y sensor ToF/LiDAR industrial.
-- Mantener la misma interfaz logica en firmware: `presenceDetected` y `safetyBlocked`.
+- Mantener la misma logica de secuencia `entrada -> ambos -> salida`.
+
+## 7) Secuencia operacional esperada (ingreso)
+
+1. Sensor entrada ON.
+2. Se reconoce patente y se abre barrera.
+3. Sensores entrada y salida ON.
+4. Sensor entrada OFF.
+5. Sensor salida OFF.
+6. Barrera cierra.

@@ -1,13 +1,41 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import AppHeader from '@/components/layout/AppHeader.vue'
 import AppSidebar from '@/components/layout/AppSidebar.vue'
+import { useAuthStore } from '@/stores/auth.store'
+import { startFirebaseRealtimeSync, stopFirebaseRealtimeSync } from '@/lib/firebase-sync'
+import { isFirebaseConfigured } from '@/lib/firebase'
 
 const mobileSidebarOpen = ref(false)
+const authStore = useAuthStore()
+let stopAuthWatch: (() => void) | null = null
 
 function closeSidebar() {
   mobileSidebarOpen.value = false
 }
+
+onMounted(() => {
+  if (!isFirebaseConfigured) return
+
+  stopAuthWatch = watch(
+    () => authStore.isAuthenticated,
+    (isAuthenticated) => {
+      if (isAuthenticated) {
+        startFirebaseRealtimeSync()
+      } else {
+        stopFirebaseRealtimeSync()
+      }
+    },
+    { immediate: true },
+  )
+})
+
+onBeforeUnmount(() => {
+  if (stopAuthWatch) stopAuthWatch()
+  if (isFirebaseConfigured) {
+    stopFirebaseRealtimeSync()
+  }
+})
 </script>
 
 <template>

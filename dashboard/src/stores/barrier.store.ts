@@ -6,8 +6,8 @@ import type { BarrierMode, BarrierState, BarrierStatus } from '@/types/domain'
 export const useBarrierStore = defineStore('barrier', () => {
   const barrier = ref<BarrierState>({ ...mockBarrierState })
   const commandLog = ref<string[]>([
-    '09:15 Apertura manual remota por Diego Avendaño',
-    '08:59 Cambio a modo automático por Rafael Sotomayor',
+    '09:15 Apertura de barrera por Diego Avendano',
+    '08:59 Automatico activado por Rafael Sotomayor',
   ])
 
   const isOpen = computed(() => barrier.value.status === 'abierta')
@@ -23,9 +23,7 @@ export const useBarrierStore = defineStore('barrier', () => {
     barrier.value.mode = mode
     barrier.value.lastActionAt = new Date().toISOString()
     barrier.value.lastActionBy = actor
-    pushLog(
-      `${formatHour(new Date())} Cambio de modo a ${translateMode(mode)} por ${actor}`,
-    )
+    pushLog(`${formatHour(new Date())} Automatico ${mode === 'automatico' ? 'activado' : 'desactivado'} por ${actor}`)
   }
 
   function openBarrier(actor: string) {
@@ -49,6 +47,16 @@ export const useBarrierStore = defineStore('barrier', () => {
     pushLog(`${formatHour(new Date())} ${reason} por ${actor}`)
   }
 
+  function setBarrierSnapshot(payload: Partial<BarrierState>) {
+    barrier.value = {
+      accessPoint: payload.accessPoint ?? barrier.value.accessPoint,
+      status: payload.status ?? barrier.value.status,
+      mode: payload.mode ?? barrier.value.mode,
+      lastActionAt: payload.lastActionAt ?? barrier.value.lastActionAt,
+      lastActionBy: payload.lastActionBy ?? barrier.value.lastActionBy,
+    }
+  }
+
   return {
     barrier,
     commandLog,
@@ -57,6 +65,7 @@ export const useBarrierStore = defineStore('barrier', () => {
     openBarrier,
     closeBarrier,
     setBarrierStatus,
+    setBarrierSnapshot,
   }
 })
 
@@ -66,10 +75,4 @@ function formatHour(date: Date) {
     minute: '2-digit',
     hour12: false,
   })
-}
-
-function translateMode(mode: BarrierMode) {
-  if (mode === 'automatico') return 'automático'
-  if (mode === 'manual_remoto') return 'manual remoto'
-  return 'manual físico'
 }

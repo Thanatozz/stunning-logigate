@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import BarrierModeBadge from '@/components/dashboard/BarrierModeBadge.vue'
 import type { BarrierMode, BarrierState } from '@/types/domain'
@@ -17,10 +18,16 @@ const emit = defineEmits<{
 }>()
 
 const modeOptions: Array<{ label: string; value: BarrierMode }> = [
-  { label: 'Automático', value: 'automatico' },
-  { label: 'Manual remoto', value: 'manual_remoto' },
-  { label: 'Manual físico', value: 'manual_fisico' },
+  { label: 'Automatico activado', value: 'automatico' },
+  { label: 'Automatico desactivado', value: 'manual_remoto' },
 ]
+
+const isAutomaticEnabled = computed(() => props.barrier.mode === 'automatico')
+
+function isModeSelected(optionMode: BarrierMode) {
+  if (optionMode === 'automatico') return isAutomaticEnabled.value
+  return !isAutomaticEnabled.value
+}
 </script>
 
 <template>
@@ -34,17 +41,17 @@ const modeOptions: Array<{ label: string; value: BarrierMode }> = [
     </div>
 
     <p class="mt-2 text-xs text-muted">
-      Última acción: {{ formatDateTime(props.barrier.lastActionAt) }} · {{ props.barrier.lastActionBy }}
+      Ultima accion: {{ formatDateTime(props.barrier.lastActionAt) }} · {{ props.barrier.lastActionBy }}
     </p>
 
-    <div class="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
+    <div class="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
       <button
         v-for="option in modeOptions"
         :key="option.value"
         type="button"
         class="rounded-lg border px-3 py-2 text-sm transition"
         :class="
-          props.barrier.mode === option.value
+          isModeSelected(option.value)
             ? 'border-accent bg-accent text-white'
             : 'btn-secondary'
         "
@@ -75,7 +82,7 @@ const modeOptions: Array<{ label: string; value: BarrierMode }> = [
     </div>
 
     <div class="mt-4 border-t border-line pt-3">
-      <p class="text-xs font-semibold uppercase tracking-wide text-muted">Bitácora de comandos</p>
+      <p class="text-xs font-semibold uppercase tracking-wide text-muted">Bitacora de comandos</p>
       <ul class="mt-2 space-y-1">
         <li v-for="entry in props.commandLog.slice(0, 4)" :key="entry" class="text-xs text-muted">
           {{ entry }}

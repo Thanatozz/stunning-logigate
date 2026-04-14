@@ -72,6 +72,10 @@ export const useDevicesStore = defineStore('devices', () => {
     return next.id
   }
 
+  function setDevices(payload: Device[]) {
+    devices.value = [...payload]
+  }
+
   return {
     devices,
     connectedCount,
@@ -81,5 +85,6 @@ export const useDevicesStore = defineStore('devices', () => {
     setDeviceStatusByAccessPoint,
     getRandomDeviceByStatus,
     addDevice,
+    setDevices,
   }
 })

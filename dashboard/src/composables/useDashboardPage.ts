@@ -6,6 +6,8 @@ import { useDevicesStore } from '@/stores/devices.store'
 import { useBarrierStore } from '@/stores/barrier.store'
 import { useAuthStore } from '@/stores/auth.store'
 import { useIotSimulatorStore } from '@/stores/iot-simulator.store'
+import { isFirebaseConfigured } from '@/lib/firebase'
+import { sendBarrierCommand } from '@/lib/firebase-sync'
 import type { BarrierMode } from '@/types/domain'
 
 export function useDashboardPage() {
@@ -24,6 +26,7 @@ export function useDashboardPage() {
   const { isRunning, lastScenarioLabel, lastRunAt } = storeToRefs(iotSimulatorStore)
 
   const isLoading = ref(true)
+  const showIotDemoControls = !isFirebaseConfigured
   let refreshTimer: ReturnType<typeof setInterval> | null = null
 
   const latestAlerts = computed(() => activeAlerts.value.slice(0, 3))
@@ -32,27 +35,91 @@ export function useDashboardPage() {
     return currentUserName.value || 'Operador'
   }
 
-  function onModeChange(mode: BarrierMode) {
-    barrierStore.setMode(mode, getActorName())
+  async function onModeChange(mode: BarrierMode) {
+    const actor = getActorName()
+    barrierStore.setMode(mode, actor)
+
+    if (!isFirebaseConfigured) return
+
+    try {
+      await sendBarrierCommand({
+        mode,
+        action: 'none',
+        updatedBy: actor,
+      })
+      dashboardStore.setError('')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'error desconocido'
+      const isPermissionDenied = message.toLowerCase().includes('permission_denied')
+      dashboardStore.setError(
+        isPermissionDenied
+          ? 'Sin permisos para operar barrera. Revisa reglas RTDB (commands/barrier) y que users/{auth.uid}/role sea admin o supervisor.'
+          : `No se pudo actualizar estado de automatico: ${message}`,
+      )
+    }
   }
 
-  function onOpenBarrier() {
-    barrierStore.openBarrier(getActorName())
+  async function onOpenBarrier() {
+    const actor = getActorName()
+    barrierStore.openBarrier(actor)
+
+    if (!isFirebaseConfigured) return
+
+    try {
+      await sendBarrierCommand({
+        mode: barrier.value.mode,
+        action: 'abrir',
+        updatedBy: actor,
+      })
+      dashboardStore.setError('')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'error desconocido'
+      const isPermissionDenied = message.toLowerCase().includes('permission_denied')
+      dashboardStore.setError(
+        isPermissionDenied
+          ? 'Sin permisos para abrir barrera. Revisa reglas RTDB (commands/barrier) y que users/{auth.uid}/role sea admin o supervisor.'
+          : `No se pudo enviar comando de apertura: ${message}`,
+      )
+    }
   }
 
-  function onCloseBarrier() {
-    barrierStore.closeBarrier(getActorName())
+  async function onCloseBarrier() {
+    const actor = getActorName()
+    barrierStore.closeBarrier(actor)
+
+    if (!isFirebaseConfigured) return
+
+    try {
+      await sendBarrierCommand({
+        mode: barrier.value.mode,
+        action: 'cerrar',
+        updatedBy: actor,
+      })
+      dashboardStore.setError('')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'error desconocido'
+      const isPermissionDenied = message.toLowerCase().includes('permission_denied')
+      dashboardStore.setError(
+        isPermissionDenied
+          ? 'Sin permisos para cerrar barrera. Revisa reglas RTDB (commands/barrier) y que users/{auth.uid}/role sea admin o supervisor.'
+          : `No se pudo enviar comando de cierre: ${message}`,
+      )
+    }
   }
 
   function retryRefresh() {
-    dashboardStore.refreshSnapshot()
+    if (!isFirebaseConfigured) {
+      dashboardStore.refreshSnapshot()
+    }
   }
 
   function toggleIotSimulation() {
+    if (isFirebaseConfigured) return
     iotSimulatorStore.toggle()
   }
 
   function triggerIotEvent() {
+    if (isFirebaseConfigured) return
     iotSimulatorStore.runOnce()
   }
 
@@ -63,16 +130,20 @@ export function useDashboardPage() {
       }, 450)
     }
 
-    refreshTimer = setInterval(() => {
-      dashboardStore.refreshSnapshot()
-    }, 12000)
+    if (!isFirebaseConfigured) {
+      refreshTimer = setInterval(() => {
+        dashboardStore.refreshSnapshot()
+      }, 12000)
 
-    iotSimulatorStore.start(9000)
+      iotSimulatorStore.start(9000)
+    }
   })
 
   onBeforeUnmount(() => {
     if (refreshTimer) clearInterval(refreshTimer)
-    iotSimulatorStore.stop()
+    if (!isFirebaseConfigured) {
+      iotSimulatorStore.stop()
+    }
   })
 
   return {
@@ -89,6 +160,7 @@ export function useDashboardPage() {
     commandLog,
     canControlBarrier,
     isRunning,
+    showIotDemoControls,
     lastScenarioLabel,
     lastRunAt,
     isLoading,

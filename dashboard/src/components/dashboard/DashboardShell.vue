@@ -7,6 +7,7 @@ withDefaults(
   defineProps<{
     title: string
     subtitle: string
+    showIotDemoControls?: boolean
     isRunning: boolean
     lastScenarioLabel: string
     lastRunLabel?: string
@@ -14,6 +15,7 @@ withDefaults(
     error?: string
   }>(),
   {
+    showIotDemoControls: true,
     lastRunLabel: '',
     error: '',
   },
@@ -30,7 +32,7 @@ const emit = defineEmits<{
   <div class="space-y-5">
     <AppSectionHeader :title="title" :subtitle="subtitle">
       <template #actions>
-        <div class="flex flex-wrap items-center gap-2">
+        <div v-if="showIotDemoControls" class="flex flex-wrap items-center gap-2">
           <span class="rounded-full px-2 py-1 text-xs font-medium" :class="isRunning ? 'badge-success' : 'badge-neutral'">
             {{ isRunning ? 'Modo demo IoT activo' : 'Modo demo IoT detenido' }}
           </span>
@@ -52,7 +54,7 @@ const emit = defineEmits<{
       </template>
     </AppSectionHeader>
 
-    <section class="panel-soft px-3 py-2 text-xs text-muted">
+    <section v-if="showIotDemoControls" class="panel-soft px-3 py-2 text-xs text-muted">
       Ultimo evento IoT: {{ lastScenarioLabel }}<span v-if="lastRunLabel"> · {{ lastRunLabel }}</span>
     </section>
 

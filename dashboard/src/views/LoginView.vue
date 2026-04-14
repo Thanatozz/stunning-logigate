@@ -7,8 +7,8 @@ const router = useRouter()
 const authStore = useAuthStore()
 
 const form = reactive({
-  email: 'supervisor@planta.cl',
-  password: 'demo123',
+  email: 'admin@logigate.cl',
+  password: '',
 })
 const errorMessage = ref('')
 const isSubmitting = ref(false)
@@ -18,14 +18,17 @@ async function submit() {
   errorMessage.value = ''
 
   await new Promise((resolve) => setTimeout(resolve, 350))
-  const ok = authStore.login(form.email, form.password)
+  const ok = await authStore.login(form.email, form.password)
 
   if (!ok) {
-    errorMessage.value = 'Credenciales no validas. Usa una cuenta de demostracion.'
+    errorMessage.value = authStore.usingFirebaseAuth
+      ? 'Credenciales invalidas o usuario sin rol autorizado.'
+      : 'Credenciales no validas. Usa una cuenta de demostracion.'
     isSubmitting.value = false
     return
   }
 
+  form.password = ''
   router.push({ name: 'dashboard' })
 }
 </script>
@@ -36,25 +39,41 @@ async function submit() {
 
     <div class="relative mx-auto flex min-h-screen w-full max-w-6xl items-center px-4 py-8 sm:px-8">
       <div class="grid w-full gap-6 rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur md:grid-cols-2 md:p-8">
-        <section class="order-2 rounded-2xl border border-white/10 bg-black/20 p-5 md:order-1 md:p-6">
-          <p class="text-xs font-semibold uppercase tracking-[0.16em] text-sky-200">Sistema IoT industrial</p>
+        <section
+          class="order-2 rounded-2xl border border-sky-200/10 bg-gradient-to-br from-[#0b1225]/90 via-[#111a34]/80 to-[#0a142b]/85 p-5 md:order-1 md:p-6"
+        >
+          <p class="text-xs font-semibold uppercase tracking-[0.16em] text-sky-200">Plataforma LogiGate</p>
           <h1 class="mt-3 font-heading text-2xl font-semibold md:text-3xl">Control de acceso vehicular en planta</h1>
           <p class="mt-3 text-sm text-slate-100/90">
-            Monitorea ingresos y salidas con OCR de patentes, sensores en campo y estado operativo en tiempo real.
+            Accede con correo y contrasena para operar monitoreo en tiempo real, alertas y control de barrera con
+            permisos por rol.
           </p>
 
-          <ul class="mt-5 space-y-2 text-sm text-slate-200">
-            <li>• Deteccion por sensor IR + camara ESP32-CAM</li>
-            <li>• Registro de eventos con trazabilidad operativa</li>
-            <li>• Alertas, reportes y control de barrera</li>
-          </ul>
-
-          <div class="mt-6 rounded-xl border border-white/15 bg-white/10 p-3 text-xs text-slate-100">
-            <p class="font-medium">Cuentas demo:</p>
-            <p class="mt-1">Admin: <span class="font-semibold">admin@planta.cl</span></p>
-            <p>Supervisor: <span class="font-semibold">supervisor@planta.cl</span></p>
-            <p class="mt-1 opacity-80">La clave puede ser cualquiera en este MVP.</p>
+          <div class="mt-6 grid gap-3 sm:grid-cols-2">
+            <article class="rounded-xl border border-white/10 bg-white/5 p-3">
+              <p class="text-xs uppercase tracking-wide text-sky-200/90">Monitoreo</p>
+              <p class="mt-1 text-sm text-slate-100">Ingreso/salida con OCR, sensores IR y estado de acceso.</p>
+            </article>
+            <article class="rounded-xl border border-white/10 bg-white/5 p-3">
+              <p class="text-xs uppercase tracking-wide text-sky-200/90">Seguridad</p>
+              <p class="mt-1 text-sm text-slate-100">Autenticacion con contrasena, sesion protegida y control por rol.</p>
+            </article>
           </div>
+
+          <ul class="mt-6 space-y-2 text-sm text-slate-200">
+            <li class="flex items-start gap-2">
+              <span class="mt-1 inline-block h-2 w-2 rounded-full bg-emerald-400" />
+              <span>Deteccion por sensor IR + camara ESP32-CAM</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="mt-1 inline-block h-2 w-2 rounded-full bg-emerald-400" />
+              <span>Registro de eventos con trazabilidad operativa</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="mt-1 inline-block h-2 w-2 rounded-full bg-emerald-400" />
+              <span>Alertas, reportes y control de barrera en un solo panel</span>
+            </li>
+          </ul>
         </section>
 
         <section class="order-1 rounded-2xl bg-white p-5 text-ink shadow-soft md:order-2 md:p-6">
