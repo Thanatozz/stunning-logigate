@@ -3,6 +3,7 @@
 Firmware para el controlador fisico del porton:
 - Sensor ultrasonico de entrada.
 - Sensor ultrasonico de salida (opcional segun perfil).
+- Captura de foto por trigger de sensor (ESP32-CAM AI Thinker, sin web server).
 - Servo de barrera.
 - Boton manual fisico.
 - Sincronizacion con Firebase Realtime Database via REST.
@@ -25,6 +26,7 @@ En `esp32_gate_controller.ino`:
   - `PIN_SERVO = GPIO13`
   - `PIN_MANUAL_BUTTON = GPIO2`
   - Sin sensor de salida fisico (`HAS_EXIT_SENSOR = false`)
+  - Camara AI Thinker (OV3660/OV2640) inicializada en `setup()` con `esp_camera_init()`
 
 - `#define USE_ESP32_CAM_MINIMAL 0`:
   - Perfil ESP32 DevKit con 2 sensores (entrada/salida).
@@ -63,6 +65,17 @@ Escritura:
 - `manual_remoto`: obedece comandos abrir/cerrar desde dashboard.
 - `manual_fisico`: boton local controla abrir/cerrar.
 
+## Captura por trigger (sin stream)
+
+- No usa `startCameraServer()` ni `CameraWebServer`.
+- Inicializa camara al arrancar (`initCamera()`).
+- Captura una foto en flanco de activacion:
+  - entrada: `entry_rising_edge`
+  - salida: `exit_rising_edge` (si hay sensor de salida)
+- Cooldown anti-rafaga: `CAPTURE_COOLDOWN_MS = 3000`.
+
+Nota: por ahora la imagen se captura y se reporta por `Serial`. Para persistencia debes agregar subida a backend o guardado en SD.
+
 ## Secuencia de cierre (ingreso)
 
 Con barrera abierta, el cierre se ejecuta cuando se cumple:
@@ -81,6 +94,14 @@ Para salida, la secuencia se evalua en orden inverso.
 - Debounce de boton.
 - Reintentos en cola para detecciones cuando hay fallas de red.
 - Heartbeat periodico del dispositivo para monitoreo.
+
+## Estabilidad en ESP32-CAM
+
+- `GPIO2` (boton) es pin delicado de arranque; evita dejarlo forzado a LOW durante boot.
+- Prueba incremental recomendada:
+  1) camara sola
+  2) camara + servo
+  3) luego ultrasonico y boton
 
 ## Compilacion
 

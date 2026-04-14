@@ -1,4 +1,7 @@
 #include <Arduino.h>
+#include "esp_camera.h"
+#define CAMERA_MODEL_AI_THINKER
+#include "camera_pins.h"
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
@@ -36,7 +39,7 @@ const char* WIFI_PASSWORD = "111222333";
 const char* FIREBASE_DB_URL = "https://stunning-logigate-default-rtdb.firebaseio.com";
 const char* FIREBASE_API_KEY = "AIzaSyAJC6k0uwv9fIM7W0KOWaOjY00-BtIEWCU";
 const char* FIREBASE_USER_EMAIL = "esp32@logigate.cl";
-const char* FIREBASE_USER_PASSWORD = "logigateesp32";
+const char* FIREBASE_USER_PASSWORD = "logigateesp32"; 
 
 const char* DEVICE_ID = "ESP32-GATE-001";
 const char* ACCESS_POINT = "porton_norte";
@@ -143,6 +146,113 @@ unsigned long firebaseTokenRefreshAt = 0;
 int buttonLastReading = HIGH;
 int buttonStableState = HIGH;
 unsigned long buttonLastDebounceAt = 0;
+
+bool cameraReady = false;
+unsigned long lastCaptureAt = 0;
+const unsigned long CAPTURE_COOLDOWN_MS = 3000;
+
+bool initCamera() {
+#if USE_ESP32_CAM_MINIMAL
+  camera_config_t config;
+  config.ledc_channel = LEDC_CHANNEL_0;
+  config.ledc_timer = LEDC_TIMER_0;
+  config.pin_d0 = Y2_GPIO_NUM;
+  config.pin_d1 = Y3_GPIO_NUM;
+  config.pin_d2 = Y4_GPIO_NUM;
+  config.pin_d3 = Y5_GPIO_NUM;
+  config.pin_d4 = Y6_GPIO_NUM;
+  config.pin_d5 = Y7_GPIO_NUM;
+  config.pin_d6 = Y8_GPIO_NUM;
+  config.pin_d7 = Y9_GPIO_NUM;
+  config.pin_xclk = XCLK_GPIO_NUM;
+  config.pin_pclk = PCLK_GPIO_NUM;
+  config.pin_vsync = VSYNC_GPIO_NUM;
+  config.pin_href = HREF_GPIO_NUM;
+#if defined(ESP_IDF_VERSION_MAJOR) && (ESP_IDF_VERSION_MAJOR >= 5)
+  config.pin_sccb_sda = SIOD_GPIO_NUM;
+  config.pin_sccb_scl = SIOC_GPIO_NUM;
+#else
+  config.pin_sscb_sda = SIOD_GPIO_NUM;
+  config.pin_sscb_scl = SIOC_GPIO_NUM;
+#endif
+  config.pin_pwdn = PWDN_GPIO_NUM;
+  config.pin_reset = RESET_GPIO_NUM;
+  config.xclk_freq_hz = 20000000;
+  config.pixel_format = PIXFORMAT_JPEG;
+  config.frame_size = FRAMESIZE_QVGA;
+  config.jpeg_quality = 12;
+  config.fb_count = 1;
+#if defined(CAMERA_GRAB_WHEN_EMPTY)
+  config.grab_mode = CAMERA_GRAB_WHEN_EMPTY;
+#endif
+#if defined(CAMERA_FB_IN_PSRAM)
+  config.fb_location = CAMERA_FB_IN_PSRAM;
+#endif
+
+  if (!psramFound()) {
+    config.frame_size = FRAMESIZE_QVGA;
+    config.fb_count = 1;
+#if defined(CAMERA_FB_IN_DRAM)
+    config.fb_location = CAMERA_FB_IN_DRAM;
+#endif
+  }
+
+  esp_err_t err = esp_camera_init(&config);
+  if (err != ESP_OK) {
+    Serial.printf("Camera init failed: 0x%x\n", err);
+    return false;
+  }
+
+  sensor_t* s = esp_camera_sensor_get();
+  if (s) {
+    // Ajuste recomendado para OV3660 en ESP32-CAM AI Thinker.
+    if (s->id.PID == OV3660_PID) {
+      s->set_vflip(s, 1);
+      s->set_brightness(s, 1);
+      s->set_saturation(s, -2);
+    }
+    s->set_framesize(s, FRAMESIZE_QVGA);
+    s->set_quality(s, 12);
+    s->set_brightness(s, 0);
+    s->set_contrast(s, 0);
+    s->set_saturation(s, 0);
+  }
+
+  Serial.println("Camera ready");
+  return true;
+#else
+  return false;
+#endif
+}
+
+void capturePhoto(const char* trigger) {
+#if USE_ESP32_CAM_MINIMAL
+  if (!cameraReady) return;
+
+  if (millis() - lastCaptureAt < CAPTURE_COOLDOWN_MS) {
+    return;
+  }
+
+  camera_fb_t* fb = esp_camera_fb_get();
+  if (!fb) {
+    Serial.println("Capture failed");
+    return;
+  }
+
+  Serial.printf("Foto capturada | trigger=%s | bytes=%u | %ux%u\n",
+                trigger, fb->len, fb->width, fb->height);
+
+  // TODO:
+  // 1) Guardar en microSD
+  // 2) Subir a backend propio
+  // 3) Enviar a Firebase Storage via API de backend
+
+  esp_camera_fb_return(fb);
+  lastCaptureAt = millis();
+#else
+  (void)trigger;
+#endif
+}
 
 // -------------------- Utilities --------------------
 String nowIsoUtc() {
@@ -689,9 +799,11 @@ void updateSensorsAndEvents() {
 
   if (!prevEntryActive && entryActive) {
     queueDetectionEvent("entry_rising_edge", "ingreso");
+    capturePhoto("entry_rising_edge");
   }
   if (HAS_EXIT_SENSOR && !prevExitActive && exitActive) {
     queueDetectionEvent("exit_rising_edge", "salida");
+    capturePhoto("exit_rising_edge");
   }
 
   prevEntryActive = entryActive;
@@ -821,6 +933,7 @@ void publishHeartbeat(bool force) {
 void setup() {
   Serial.begin(115200);
   randomSeed(esp_random());
+  cameraReady = initCamera();
 
   pinMode(PIN_ENTRY_TRIG, OUTPUT);
   pinMode(PIN_ENTRY_ECHO, INPUT);
