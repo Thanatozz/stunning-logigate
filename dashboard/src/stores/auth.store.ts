@@ -3,7 +3,7 @@ import { defineStore } from 'pinia'
 import { getIdTokenResult, onAuthStateChanged, signInWithEmailAndPassword, signOut, type User } from 'firebase/auth'
 import { get, onValue, ref as dbRef, type Unsubscribe } from 'firebase/database'
 import { mockUsers } from '@/data/mock/session'
-import { firebaseAuth, firebaseDb, isFirebaseConfigured } from '@/lib/firebase'
+import { firebaseAuth, firebaseDb, getFirebaseDebugInfo, isFirebaseConfigured } from '@/lib/firebase'
 import type { Role, UserSession } from '@/types/domain'
 
 const SESSION_KEY = 'logigate_session'
@@ -138,6 +138,51 @@ function persistSession(session: UserSession | null) {
   localStorage.setItem(SESSION_KEY, JSON.stringify(session))
 }
 
+function extractErrorCode(error: unknown): string {
+  if (!error || typeof error !== 'object') return 'unknown'
+  const raw = (error as { code?: unknown }).code
+  return typeof raw === 'string' && raw.trim().length > 0 ? raw : 'unknown'
+}
+
+function extractErrorMessage(error: unknown): string {
+  if (!error || typeof error !== 'object') return 'Sin detalle'
+  const raw = (error as { message?: unknown }).message
+  return typeof raw === 'string' && raw.trim().length > 0 ? raw : 'Sin detalle'
+}
+
+function mapFirebaseLoginError(error: unknown): string {
+  const code = extractErrorCode(error)
+
+  if (code === 'auth/unauthorized-domain') {
+    return 'Dominio no autorizado en Firebase Auth. Agrega este host en Authentication > Settings > Authorized domains.'
+  }
+  if (code === 'auth/operation-not-allowed') {
+    return 'Email/Password no esta habilitado en Firebase Authentication.'
+  }
+  if (code === 'auth/invalid-api-key') {
+    return 'API key invalida. Revisa VITE_FIREBASE_API_KEY.'
+  }
+  if (code === 'auth/app-not-authorized') {
+    return 'App no autorizada para Firebase Auth. Revisa API key, authDomain y dominio autorizado.'
+  }
+  if (code === 'auth/network-request-failed') {
+    return 'Fallo de red al contactar Firebase.'
+  }
+  if (code === 'auth/too-many-requests') {
+    return 'Demasiados intentos. Espera un momento e intenta nuevamente.'
+  }
+  if (
+    code === 'auth/invalid-credential' ||
+    code === 'auth/invalid-login-credentials' ||
+    code === 'auth/user-not-found' ||
+    code === 'auth/wrong-password'
+  ) {
+    return 'Credenciales invalidas.'
+  }
+
+  return `Error de autenticacion (${code}).`
+}
+
 function stopSelfUserSync() {
   if (!stopSelfUserListener) return
   stopSelfUserListener()
@@ -175,9 +220,11 @@ async function buildSessionFromFirebaseUser(user: User): Promise<UserSession | n
 
 export const useAuthStore = defineStore('auth', () => {
   const session = ref<UserSession | null>(restoreSession())
+  const lastLoginError = ref('')
 
   async function forceFirebaseLogout() {
     session.value = null
+    lastLoginError.value = ''
     persistSession(null)
     stopSelfUserSync()
     if (firebaseAuth) {
@@ -263,6 +310,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function login(email: string, password: string): Promise<boolean> {
     const normalizedEmail = email.trim().toLowerCase()
+    lastLoginError.value = ''
 
     if (usingFirebaseAuth.value && firebaseAuth) {
       try {
@@ -271,32 +319,50 @@ export const useAuthStore = defineStore('auth', () => {
         if (!nextSession) {
           await signOut(firebaseAuth)
           session.value = null
+          lastLoginError.value = 'Usuario autenticado sin rol autorizado (admin/supervisor).'
           persistSession(null)
           return false
         }
 
         session.value = nextSession
+        lastLoginError.value = ''
         persistSession(nextSession)
         startSelfUserSync(credential.user)
         return true
-      } catch {
+      } catch (error) {
+        lastLoginError.value = mapFirebaseLoginError(error)
+        console.error('[LogiGate][auth] Firebase login failed', {
+          email: normalizedEmail,
+          errorCode: extractErrorCode(error),
+          errorMessage: extractErrorMessage(error),
+          debug: getFirebaseDebugInfo(),
+        })
         return false
       }
     }
 
     const user = mockUsers.find((item) => item.email.toLowerCase() === normalizedEmail)
-    if (!user) return false
+    if (!user) {
+      lastLoginError.value = 'Usuario demo no encontrado. Prueba con admin@logigate.cl o supervisor@logigate.cl.'
+      console.warn('[LogiGate][auth] Demo login failed', {
+        email: normalizedEmail,
+        debug: getFirebaseDebugInfo(),
+      })
+      return false
+    }
 
     session.value = {
       ...user,
       lastLoginAt: new Date().toISOString(),
     }
+    lastLoginError.value = ''
     persistSession(session.value)
     return true
   }
 
   function logout() {
     session.value = null
+    lastLoginError.value = ''
     persistSession(null)
     stopSelfUserSync()
     if (usingFirebaseAuth.value && firebaseAuth) {
@@ -317,6 +383,7 @@ export const useAuthStore = defineStore('auth', () => {
     currentUserName,
     canControlBarrier,
     usingFirebaseAuth,
+    lastLoginError,
     login,
     logout,
     hasRole,

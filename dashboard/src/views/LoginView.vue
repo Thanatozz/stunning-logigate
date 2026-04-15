@@ -21,9 +21,7 @@ async function submit() {
   const ok = await authStore.login(form.email, form.password)
 
   if (!ok) {
-    errorMessage.value = authStore.usingFirebaseAuth
-      ? 'Credenciales invalidas o usuario sin rol autorizado.'
-      : 'Credenciales no validas. Usa una cuenta de demostracion.'
+    errorMessage.value = authStore.lastLoginError || 'No se pudo iniciar sesion.'
     isSubmitting.value = false
     return
   }
