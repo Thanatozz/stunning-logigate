@@ -13,6 +13,7 @@ import { useBarrierStore } from '@/stores/barrier.store'
 import { useDashboardStore } from '@/stores/dashboard.store'
 import { useDevicesStore } from '@/stores/devices.store'
 import { useHistoryStore } from '@/stores/history.store'
+import { useSettingsStore } from '@/stores/settings.store'
 import type {
   AccessEventType,
   AccessRecord,
@@ -241,6 +242,10 @@ function parseRecentActivity(value: unknown): RecentActivityItem[] {
     .sort((a, b) => Date.parse(b.timestamp) - Date.parse(a.timestamp))
 }
 
+function parseSettings(value: unknown): Record<string, unknown> {
+  return toObject(value)
+}
+
 function parseDevices(value: unknown): Device[] {
   const source = toObject(value)
   const nowMs = Date.now()
@@ -441,6 +446,7 @@ export function startFirebaseRealtimeSync() {
   const alertsStore = useAlertsStore()
   const historyStore = useHistoryStore()
   const barrierStore = useBarrierStore()
+  const settingsStore = useSettingsStore()
   latestAccessRecords = []
   latestPlateReadingRecords = []
 
@@ -482,13 +488,22 @@ export function startFirebaseRealtimeSync() {
 
   addListener(`barrier/${realtimeAccessPoint}`, (value) => {
     const barrier = toObject(value)
-    barrierStore.setBarrierSnapshot({
+    barrierStore.syncBarrierFromRemote({
       accessPoint: realtimeAccessPoint,
       status: normalizeBarrierStatus(barrier.status),
       mode: normalizeBarrierMode(barrier.mode),
       lastActionAt: toIso(barrier.lastActionAt),
       lastActionBy: String(barrier.lastActionBy ?? 'sistema'),
+      reason: String(barrier.reason ?? ''),
+      source: String(barrier.lastActionBy ?? 'device'),
     })
+    dashboardStore.setLastUpdated()
+  })
+
+  addListener('settings', (value) => {
+    const settings = parseSettings(value)
+    if (!Object.keys(settings).length) return
+    settingsStore.applyRemoteSettings(settings)
     dashboardStore.setLastUpdated()
   })
 

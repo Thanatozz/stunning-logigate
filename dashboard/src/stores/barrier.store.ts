@@ -5,10 +5,8 @@ import type { BarrierMode, BarrierState, BarrierStatus } from '@/types/domain'
 
 export const useBarrierStore = defineStore('barrier', () => {
   const barrier = ref<BarrierState>({ ...mockBarrierState })
-  const commandLog = ref<string[]>([
-    '09:15 Apertura de barrera por Diego Avendano',
-    '08:59 Automatico activado por Rafael Sotomayor',
-  ])
+  const commandLog = ref<string[]>([])
+  const lastRemoteEventSignature = ref('')
 
   const isOpen = computed(() => barrier.value.status === 'abierta')
 
@@ -57,6 +55,60 @@ export const useBarrierStore = defineStore('barrier', () => {
     }
   }
 
+  function setCommandLog(entries: string[]) {
+    commandLog.value = [...entries]
+  }
+
+  function addCommandLog(entry: string) {
+    const hasTimePrefix = /^\d{2}:\d{2}\s/.test(entry)
+    pushLog(hasTimePrefix ? entry : `${formatHour(new Date())} ${entry}`)
+  }
+
+  function syncBarrierFromRemote(
+    payload: Partial<BarrierState> & { reason?: string; source?: string },
+  ) {
+    const next: BarrierState = {
+      accessPoint: payload.accessPoint ?? barrier.value.accessPoint,
+      status: payload.status ?? barrier.value.status,
+      mode: payload.mode ?? barrier.value.mode,
+      lastActionAt: payload.lastActionAt ?? barrier.value.lastActionAt,
+      lastActionBy: payload.lastActionBy ?? barrier.value.lastActionBy,
+    }
+
+    const signature = [
+      next.accessPoint,
+      next.status,
+      next.mode,
+      next.lastActionAt,
+      next.lastActionBy,
+      payload.reason ?? '',
+      payload.source ?? '',
+    ].join('|')
+
+    barrier.value = next
+
+    if (signature === lastRemoteEventSignature.value) {
+      return
+    }
+
+    lastRemoteEventSignature.value = signature
+
+    const actionLabel =
+      payload.reason?.trim() ||
+      (next.status === 'abierta'
+        ? 'Barrera abierta'
+        : next.status === 'cerrada'
+          ? 'Barrera cerrada'
+          : 'Barrera en transicion')
+
+    const actor = next.lastActionBy || payload.source || 'sistema'
+    const eventTime = next.lastActionAt
+      ? new Date(next.lastActionAt)
+      : new Date()
+
+    pushLog(`${formatHour(eventTime)} ${actionLabel} por ${actor}`)
+  }
+
   return {
     barrier,
     commandLog,
@@ -66,6 +118,9 @@ export const useBarrierStore = defineStore('barrier', () => {
     closeBarrier,
     setBarrierStatus,
     setBarrierSnapshot,
+    setCommandLog,
+    addCommandLog,
+    syncBarrierFromRemote,
   }
 })
 

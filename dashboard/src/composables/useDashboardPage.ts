@@ -7,6 +7,7 @@ import { useBarrierStore } from '@/stores/barrier.store'
 import { useAuthStore } from '@/stores/auth.store'
 import { useIotSimulatorStore } from '@/stores/iot-simulator.store'
 import { useSettingsStore } from '@/stores/settings.store'
+import { useHistoryStore } from '@/stores/history.store'
 import { isFirebaseConfigured } from '@/lib/firebase'
 import { setRealtimeSyncAccessPoint } from '@/lib/firebase-sync'
 import { sendBarrierCommand } from '@/lib/firebase-writes'
@@ -20,6 +21,7 @@ export function useDashboardPage() {
   const authStore = useAuthStore()
   const iotSimulatorStore = useIotSimulatorStore()
   const settingsStore = useSettingsStore()
+  const historyStore = useHistoryStore()
 
   const { kpi, plantState, chartSeries, recentActivity, lastUpdated, error } =
     storeToRefs(dashboardStore)
@@ -30,6 +32,7 @@ export function useDashboardPage() {
   const { isRunning, lastScenarioLabel, lastRunAt } =
     storeToRefs(iotSimulatorStore)
   const { controlAccessPoint } = storeToRefs(settingsStore)
+  const { records: historyRecords } = storeToRefs(historyStore)
 
   const isLoading = ref(true)
   const showIotDemoControls = !isFirebaseConfigured
@@ -47,6 +50,9 @@ export function useDashboardPage() {
     const targetAccessPoint = controlAccessPoint.value
     barrierStore.setBarrierSnapshot({ accessPoint: targetAccessPoint })
     barrierStore.setMode(mode, actor)
+    barrierStore.addCommandLog(
+      `Modo ${mode} solicitado para ${targetAccessPoint} por ${actor}`,
+    )
 
     if (!isFirebaseConfigured) return
 
@@ -56,6 +62,7 @@ export function useDashboardPage() {
         action: 'none',
         updatedBy: actor,
         accessPoint: targetAccessPoint,
+        reason: `Cambio de modo a ${mode}`,
       })
       dashboardStore.setError('')
     } catch (error) {
@@ -86,32 +93,44 @@ export function useDashboardPage() {
         `Apertura automatica solicitada (${targetAccessPoint})`,
       )
     } else {
-      barrierStore.openBarrier(actor)
+      barrierStore.setBarrierStatus(
+        'abierta',
+        actor,
+        `Apertura manual remota (${targetAccessPoint})`,
+      )
     }
 
     if (!isFirebaseConfigured) return
 
     try {
-      if (isAutomatic) {
-        const windowSeconds = Math.max(
-          1,
-          Math.floor(settingsStore.settings.barrierAutoCloseSeconds || 10),
-        )
-        const autoOpenUntil = Date.now() + windowSeconds * 1000
+      const windowSeconds = Math.max(
+        1,
+        Math.floor(settingsStore.settings.barrierAutoCloseSeconds || 10),
+      )
+      const autoOpenUntil = Date.now() + windowSeconds * 1000
 
-        await sendBarrierCommand({
-          mode: 'automatico',
-          action: 'none',
-          autoOpenUntil,
-          updatedBy: actor,
-          accessPoint: targetAccessPoint,
+      await sendBarrierCommand({
+        mode: barrier.value.mode,
+        action: 'abrir',
+        autoOpenUntil: isAutomatic ? autoOpenUntil : 0,
+        updatedBy: actor,
+        accessPoint: targetAccessPoint,
+        reason: isAutomatic
+          ? `Apertura solicitada en modo automatico (${targetAccessPoint})`
+          : `Apertura manual remota (${targetAccessPoint})`,
+      })
+
+      if (isAutomatic) {
+        dashboardStore.addRecentActivity({
+          title: 'Apertura automatica solicitada',
+          detail: `${targetAccessPoint} · ventana ${windowSeconds}s`,
+          level: 'info',
         })
       } else {
-        await sendBarrierCommand({
-          mode: barrier.value.mode,
-          action: 'abrir',
-          updatedBy: actor,
-          accessPoint: targetAccessPoint,
+        dashboardStore.addRecentActivity({
+          title: 'Apertura manual remota',
+          detail: `${targetAccessPoint} solicitada por ${actor}`,
+          level: 'normal',
         })
       }
 
@@ -134,7 +153,11 @@ export function useDashboardPage() {
     const actor = getActorName()
     const targetAccessPoint = controlAccessPoint.value
     barrierStore.setBarrierSnapshot({ accessPoint: targetAccessPoint })
-    barrierStore.closeBarrier(actor)
+    barrierStore.setBarrierStatus(
+      'cerrada',
+      actor,
+      `Cierre manual remoto (${targetAccessPoint})`,
+    )
 
     if (!isFirebaseConfigured) return
 
@@ -144,6 +167,12 @@ export function useDashboardPage() {
         action: 'cerrar',
         updatedBy: actor,
         accessPoint: targetAccessPoint,
+        reason: `Cierre manual remoto (${targetAccessPoint})`,
+      })
+      dashboardStore.addRecentActivity({
+        title: 'Cierre manual remoto',
+        detail: `${targetAccessPoint} solicitado por ${actor}`,
+        level: 'normal',
       })
       dashboardStore.setError('')
     } catch (error) {
@@ -178,11 +207,17 @@ export function useDashboardPage() {
 
   onMounted(() => {
     if (isFirebaseConfigured) {
+      void settingsStore.loadSettingsFromFirebase()
+    }
+
+    if (isFirebaseConfigured) {
       stopAccessPointWatch = watch(
         controlAccessPoint,
         (nextValue) => {
           setRealtimeSyncAccessPoint(nextValue)
           barrierStore.setBarrierSnapshot({ accessPoint: nextValue })
+          barrierStore.setCommandLog([])
+          barrierStore.addCommandLog(`Control activo en ${nextValue}`)
         },
         { immediate: true },
       )
@@ -239,5 +274,6 @@ export function useDashboardPage() {
     retryRefresh,
     toggleIotSimulation,
     triggerIotEvent,
+    historyRecords,
   }
 }

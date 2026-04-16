@@ -9,6 +9,8 @@ const props = defineProps<{
   barrier: BarrierState
   canControl: boolean
   commandLog: string[]
+  targetAccessPointKey: string
+  targetAccessPointLabel: string
 }>()
 
 const emit = defineEmits<{
@@ -33,7 +35,10 @@ function isModeSelected(optionMode: BarrierMode) {
 <template>
   <section class="card-panel p-4 sm:p-5">
     <div class="flex flex-wrap items-center justify-between gap-2">
-      <h3 class="text-sm font-semibold">Control de barrera</h3>
+      <h3 class="text-sm font-semibold">
+        Control de barrera
+        <span class="text-muted">· {{ props.targetAccessPointLabel }}</span>
+      </h3>
       <div class="flex items-center gap-2">
         <StatusBadge :value="props.barrier.status" />
         <BarrierModeBadge :mode="props.barrier.mode" />
@@ -42,6 +47,9 @@ function isModeSelected(optionMode: BarrierMode) {
 
     <p class="mt-2 text-xs text-muted">
       Ultima accion: {{ formatDateTime(props.barrier.lastActionAt) }} · {{ props.barrier.lastActionBy }}
+    </p>
+    <p class="mt-1 text-xs text-muted">
+      Barrera objetivo: {{ props.targetAccessPointKey }}
     </p>
 
     <div class="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -69,7 +77,7 @@ function isModeSelected(optionMode: BarrierMode) {
         :disabled="!props.canControl"
         @click="emit('open')"
       >
-        Abrir barrera
+        Abrir {{ props.targetAccessPointLabel }}
       </button>
       <button
         type="button"
@@ -77,14 +85,18 @@ function isModeSelected(optionMode: BarrierMode) {
         :disabled="!props.canControl"
         @click="emit('close')"
       >
-        Cerrar barrera
+        Cerrar {{ props.targetAccessPointLabel }}
       </button>
     </div>
 
     <div class="mt-4 border-t border-line pt-3">
       <p class="text-xs font-semibold uppercase tracking-wide text-muted">Bitacora de comandos</p>
       <ul class="mt-2 space-y-1">
-        <li v-for="entry in props.commandLog.slice(0, 4)" :key="entry" class="text-xs text-muted">
+        <li
+          v-for="(entry, index) in props.commandLog.slice(0, 6)"
+          :key="`${entry}-${index}`"
+          class="text-xs text-muted"
+        >
           {{ entry }}
         </li>
       </ul>

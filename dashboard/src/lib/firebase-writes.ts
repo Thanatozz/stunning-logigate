@@ -9,6 +9,7 @@ interface BarrierCommandInput {
   updatedBy: string
   accessPoint?: string
   autoOpenUntil?: number
+  reason?: string
 }
 
 function resolveAccessPoint(accessPoint?: string) {
@@ -45,6 +46,17 @@ export async function sendBarrierCommand(input: BarrierCommandInput) {
   }
 
   await update(dbRef(firebaseDb, `commands/${targetAccessPoint}`), payload)
+
+  try {
+    await set(dbRef(firebaseDb, `commandAudit/${targetAccessPoint}/${requestId}`), {
+      ...payload,
+      accessPoint: targetAccessPoint,
+      source: 'dashboard',
+      reason: input.reason ?? '',
+    })
+  } catch (error) {
+    console.warn('[LogiGate][commandAudit] No se pudo guardar auditoria de comando', error)
+  }
 
   if (isVirtualGateEnabled) {
     const barrierPatch: Record<string, unknown> = {

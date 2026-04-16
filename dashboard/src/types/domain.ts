@@ -111,6 +111,17 @@ export interface BarrierState {
   lastActionBy: string
 }
 
+export interface CommandAuditEntry {
+  id: string
+  accessPoint: string
+  action: 'abrir' | 'cerrar' | 'none'
+  mode: BarrierMode
+  updatedBy: string
+  updatedAt: string
+  source: 'dashboard' | 'device' | 'backend'
+  reason?: string
+}
+
 export interface AccessPoint {
   id: string
   name: string

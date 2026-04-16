@@ -86,7 +86,9 @@
   const unsigned long WIFI_RECONNECT_MS = 6000;
   const unsigned long BUTTON_DEBOUNCE_MS = 80;
   const unsigned long CROSSING_TIMEOUT_MS = 9000;
-  const unsigned long OPEN_FAILSAFE_MS = 15000;
+  const unsigned long DEFAULT_OPEN_FAILSAFE_MS = 15000;
+  const unsigned long DEFAULT_CAPTURE_COOLDOWN_MS = 3000;
+  const unsigned long SETTINGS_POLL_MS = 8000;
   const unsigned long HTTP_TIMEOUT_MS = 7000;
   const unsigned long RETRY_BASE_MS = 1800;
   const uint8_t MAX_RETRY_ATTEMPTS = 8;
@@ -149,7 +151,10 @@ const bool ENABLE_NTP_SYNC = false;
   String barrierMode = START_IN_MANUAL_FISICO ? "manual_fisico" : "automatico";
   String barrierStatus = "cerrada";
   String lastCommandRequestId = "";
+  String lastAutoOpenWindowRequestId = "";
   unsigned long barrierOpenedAtMs = 0;
+  unsigned long barrierAutoCloseMs = DEFAULT_OPEN_FAILSAFE_MS;
+  unsigned long captureCooldownMs = DEFAULT_CAPTURE_COOLDOWN_MS;
 
   float entryDistanceCm = INVALID_DISTANCE_CM;
   float exitDistanceCm = INVALID_DISTANCE_CM;
@@ -168,6 +173,7 @@ const bool ENABLE_NTP_SYNC = false;
   unsigned long lastWifiCheckAt = 0;
   unsigned long lastNtpSyncAt = 0;
   unsigned long lastDistanceLogAt = 0;
+  unsigned long lastSettingsPollAt = 0;
 
 String firebaseIdToken = "";
 String firebaseRefreshToken = "";
@@ -182,7 +188,6 @@ unsigned long firebaseAuthLockMs = FIREBASE_AUTH_LOCK_BASE_MS;
 
   bool cameraReady = false;
   unsigned long lastCaptureAt = 0;
-  const unsigned long CAPTURE_COOLDOWN_MS = 3000;
 
   // -------------------- Forward declarations --------------------
   bool isWifiConnected();
@@ -195,6 +200,7 @@ unsigned long firebaseAuthLockMs = FIREBASE_AUTH_LOCK_BASE_MS;
   void runConnectivityTask();
   void runSensorTask();
   void runCommandTask();
+  void runSettingsTask();
   void openBarrier(const char* actor, const char* reason);
   void moveServoToAngle(int targetAngle);
   bool sendPhotoToPlateRecognizer(camera_fb_t* fb, String& responseBodyOut, int& httpCodeOut);
@@ -302,7 +308,7 @@ unsigned long firebaseAuthLockMs = FIREBASE_AUTH_LOCK_BASE_MS;
   #if USE_ESP32_CAM_MINIMAL
     if (!cameraReady) return;
 
-    if (millis() - lastCaptureAt < CAPTURE_COOLDOWN_MS) {
+    if (millis() - lastCaptureAt < captureCooldownMs) {
       return;
     }
 
@@ -1530,11 +1536,72 @@ bool ensureFirebaseIdToken() {
 
     if (barrierMode == "automatico" && autoOpenUntil > 0) {
       long long nowMs = nowEpochMs();
-      if (nowMs > 0 && nowMs <= autoOpenUntil) {
+      bool windowActiveWithClock = (nowMs > 0 && nowMs <= autoOpenUntil);
+      bool windowActiveWithoutClock =
+        (nowMs == 0 && requestId.length() > 0 && requestId != lastAutoOpenWindowRequestId);
+
+      if (windowActiveWithClock) {
         Serial.printf("[CMD] auto-open window active (now=%lld <= until=%lld)\n", nowMs, autoOpenUntil);
+      } else if (windowActiveWithoutClock) {
+        Serial.printf("[CMD] auto-open fallback without NTP (requestId=%s)\n", requestId.c_str());
+      }
+
+      if (windowActiveWithClock || windowActiveWithoutClock) {
         openBarrier("automatico", "Authorized auto-open window");
+        if (requestId.length() > 0) {
+          lastAutoOpenWindowRequestId = requestId;
+        }
       }
     }
+  }
+
+  void pollRuntimeSettings() {
+    String response;
+    if (!firebaseGet("settings", response)) {
+      return;
+    }
+    if (response == "null" || response.length() == 0) {
+      return;
+    }
+
+    StaticJsonDocument<384> doc;
+    if (deserializeJson(doc, response) != DeserializationError::Ok) {
+      return;
+    }
+
+    unsigned long nextCaptureSeconds = doc["captureIntervalSeconds"] | 0UL;
+    if (nextCaptureSeconds > 0) {
+      unsigned long boundedSeconds = constrain(nextCaptureSeconds, 1UL, 120UL);
+      unsigned long nextCaptureMs = boundedSeconds * 1000UL;
+      if (nextCaptureMs != captureCooldownMs) {
+        Serial.printf(
+          "[SETTINGS] captureIntervalSeconds=%lu (cooldownMs=%lu)\n",
+          boundedSeconds,
+          nextCaptureMs
+        );
+        captureCooldownMs = nextCaptureMs;
+      }
+    }
+
+    unsigned long nextAutoCloseSeconds = doc["barrierAutoCloseSeconds"] | 0UL;
+    if (nextAutoCloseSeconds > 0) {
+      unsigned long boundedSeconds = constrain(nextAutoCloseSeconds, 1UL, 300UL);
+      unsigned long nextAutoCloseMs = boundedSeconds * 1000UL;
+      if (nextAutoCloseMs != barrierAutoCloseMs) {
+        Serial.printf(
+          "[SETTINGS] barrierAutoCloseSeconds=%lu (autoCloseMs=%lu)\n",
+          boundedSeconds,
+          nextAutoCloseMs
+        );
+        barrierAutoCloseMs = nextAutoCloseMs;
+      }
+    }
+  }
+
+  void runSettingsTask() {
+    if (millis() - lastSettingsPollAt < SETTINGS_POLL_MS) return;
+    pollRuntimeSettings();
+    lastSettingsPollAt = millis();
   }
 
   void applyAutomaticClosureRule() {
@@ -1542,7 +1609,7 @@ bool ensureFirebaseIdToken() {
     if (barrierStatus != "abierta") return;
     if (entryActive || exitActive) return;
 
-    if (millis() - barrierOpenedAtMs >= OPEN_FAILSAFE_MS) {
+    if (millis() - barrierOpenedAtMs >= barrierAutoCloseMs) {
       Serial.println("[SERVO] failsafe close timeout reached");
       closeBarrier("automatico", "Failsafe close timeout");
     }
@@ -1613,6 +1680,8 @@ bool ensureFirebaseIdToken() {
 
     syncNtp();
     ensureFirebaseIdToken();
+    pollRuntimeSettings();
+    lastSettingsPollAt = millis();
   }
 
   void runConnectivityTask() {
@@ -1663,6 +1732,7 @@ bool ensureFirebaseIdToken() {
     flushDetectionQueue();
     flushPlateReadingQueue();
 
+    runSettingsTask();
     runCommandTask();
 
     applyAutomaticClosureRule();

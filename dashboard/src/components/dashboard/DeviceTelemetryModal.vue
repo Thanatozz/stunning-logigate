@@ -3,11 +3,12 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import { formatDateTime } from '@/composables/useKpi'
 import { inferDeviceStatusFromHeartbeat } from '@/lib/device-health'
-import type { Device, DeviceStatus } from '@/types/domain'
+import type { AccessRecord, Device, DeviceStatus } from '@/types/domain'
 
 const props = defineProps<{
   open: boolean
   device: Device | null
+  latestRecord?: AccessRecord | null
 }>()
 
 const emit = defineEmits<{
@@ -18,6 +19,7 @@ const nowMs = ref(Date.now())
 let liveClock: ReturnType<typeof setInterval> | null = null
 
 const telemetry = computed(() => props.device?.telemetry)
+const latestRecord = computed(() => props.latestRecord ?? null)
 const effectiveStatus = computed<DeviceStatus>(() => {
   if (!props.device) return 'offline'
   return inferDeviceStatusFromHeartbeat(props.device.status, props.device.lastSeen, nowMs.value)
@@ -172,6 +174,12 @@ function signalBarClass(signal: number | null | undefined) {
   if (percent >= 40) return 'bg-warning'
   return 'bg-danger'
 }
+
+function formatEventType(value: AccessRecord['eventType'] | undefined) {
+  if (value === 'ingreso') return 'Ingreso'
+  if (value === 'salida') return 'Salida'
+  return '--'
+}
 </script>
 
 <template>
@@ -263,6 +271,19 @@ function signalBarClass(signal: number | null | undefined) {
           </article>
 
           <article class="telemetry-card p-3">
+            <p class="text-xs font-semibold uppercase tracking-wide text-muted">Ultimo evento de cruce</p>
+            <p class="mt-2 text-sm font-semibold text-default">
+              {{ latestRecord ? formatEventType(latestRecord.eventType) : '--' }}
+            </p>
+            <p class="mt-1 text-xs text-muted">
+              {{ latestRecord ? formatDateTime(latestRecord.timestamp) : 'Sin registro reciente' }}
+            </p>
+            <p v-if="latestRecord" class="mt-1 text-xs text-muted">
+              {{ latestRecord.accessPoint }} · {{ latestRecord.deviceId }}
+            </p>
+          </article>
+
+          <article class="telemetry-card p-3">
             <p class="text-xs font-semibold uppercase tracking-wide text-muted">Sensor entrada</p>
             <p class="mt-2 font-mono text-lg font-semibold text-default">
               Distancia:
@@ -297,6 +318,20 @@ function signalBarClass(signal: number | null | undefined) {
               :class="sensorStatusTextClass(getSensorState(telemetry.exitSensorActive, telemetry.exitDistanceCm))"
             >
               {{ sensorBadgeLabel(getSensorState(telemetry.exitSensorActive, telemetry.exitDistanceCm)) }}
+            </p>
+          </article>
+
+          <article class="telemetry-card p-3">
+            <p class="text-xs font-semibold uppercase tracking-wide text-muted">Ultima patente detectada</p>
+            <p class="mt-2 font-mono text-lg font-semibold text-default">
+              {{ latestRecord ? latestRecord.plate : '--' }}
+            </p>
+            <p class="mt-1 text-xs text-muted">
+              {{
+                latestRecord
+                  ? `Confianza OCR ${latestRecord.ocrConfidence.toFixed(1)}%`
+                  : 'Sin lectura OCR en este dispositivo'
+              }}
             </p>
           </article>
 

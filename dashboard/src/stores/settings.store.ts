@@ -51,6 +51,44 @@ function parseAccessPoints(raw: unknown, fallback: AccessPoint[]) {
   return parsed.length ? parsed : fallback
 }
 
+function buildSettingsFromRaw(
+  data: Record<string, unknown>,
+  fallback: SystemSettings,
+): SystemSettings {
+  return {
+    maxTrucks: Math.max(1, Math.floor(toNumber(data.maxTrucks, fallback.maxTrucks))),
+    maxStayMinutes: Math.max(
+      1,
+      Math.floor(toNumber(data.maxStayMinutes, fallback.maxStayMinutes)),
+    ),
+    ocrConfidenceThreshold: Math.min(
+      100,
+      Math.max(
+        1,
+        Math.floor(
+          toNumber(
+            data.ocrConfidenceThreshold,
+            fallback.ocrConfidenceThreshold,
+          ),
+        ),
+      ),
+    ),
+    captureIntervalSeconds: Math.max(
+      1,
+      Math.floor(
+        toNumber(data.captureIntervalSeconds, fallback.captureIntervalSeconds),
+      ),
+    ),
+    barrierAutoCloseSeconds: Math.max(
+      1,
+      Math.floor(
+        toNumber(data.barrierAutoCloseSeconds, fallback.barrierAutoCloseSeconds),
+      ),
+    ),
+    accessPoints: parseAccessPoints(data.accessPoints, fallback.accessPoints),
+  }
+}
+
 export const useSettingsStore = defineStore('settings', () => {
   const settings = ref<SystemSettings>({
     ...mockSettings,
@@ -165,47 +203,18 @@ export const useSettingsStore = defineStore('settings', () => {
     controlAccessPoint.value = normalized
   }
 
+  function applyRemoteSettings(payload: Record<string, unknown>) {
+    settings.value = buildSettingsFromRaw(payload, settings.value)
+    ensureSelectedAccessPoint()
+  }
+
   async function loadSettingsFromFirebase() {
     try {
       syncError.value = ''
       const remote = await loadSystemSettings()
       if (!remote || typeof remote !== 'object') return
       const data = remote as Record<string, unknown>
-
-      settings.value = {
-        maxTrucks: Math.max(1, Math.floor(toNumber(data.maxTrucks, settings.value.maxTrucks))),
-        maxStayMinutes: Math.max(
-          1,
-          Math.floor(toNumber(data.maxStayMinutes, settings.value.maxStayMinutes)),
-        ),
-        ocrConfidenceThreshold: Math.min(
-          100,
-          Math.max(
-            1,
-            Math.floor(
-              toNumber(
-                data.ocrConfidenceThreshold,
-                settings.value.ocrConfidenceThreshold,
-              ),
-            ),
-          ),
-        ),
-        captureIntervalSeconds: Math.max(
-          1,
-          Math.floor(
-            toNumber(data.captureIntervalSeconds, settings.value.captureIntervalSeconds),
-          ),
-        ),
-        barrierAutoCloseSeconds: Math.max(
-          1,
-          Math.floor(
-            toNumber(data.barrierAutoCloseSeconds, settings.value.barrierAutoCloseSeconds),
-          ),
-        ),
-        accessPoints: parseAccessPoints(data.accessPoints, settings.value.accessPoints),
-      }
-
-      ensureSelectedAccessPoint()
+      applyRemoteSettings(data)
     } catch (error) {
       syncError.value =
         error instanceof Error ? error.message : 'No se pudo leer configuracion'
@@ -222,6 +231,7 @@ export const useSettingsStore = defineStore('settings', () => {
     addAccessPoint,
     setSettings,
     setControlAccessPoint,
+    applyRemoteSettings,
     loadSettingsFromFirebase,
   }
 })

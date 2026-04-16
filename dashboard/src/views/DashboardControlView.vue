@@ -31,6 +31,7 @@ const {
   retryRefresh,
   toggleIotSimulation,
   triggerIotEvent,
+  historyRecords,
 } = useDashboardPage()
 
 const controlFeed = computed(() => recentActivity.value.slice(0, 10))
@@ -55,6 +56,28 @@ const deviceAccessPoints = computed(() => {
 const selectedDevice = computed(() => {
   if (!selectedDeviceId.value) return null
   return devices.value.find((item) => item.id === selectedDeviceId.value) ?? null
+})
+
+const selectedAccessPointOption = computed(() =>
+  activeAccessPointOptions.value.find(
+    (item) => item.key === controlAccessPointModel.value,
+  ),
+)
+
+const selectedAccessPointLabel = computed(
+  () => selectedAccessPointOption.value?.label ?? controlAccessPointModel.value,
+)
+
+const selectedDeviceLatestRecord = computed(() => {
+  const device = selectedDevice.value
+  if (!device) return null
+
+  return (
+    historyRecords.value.find(
+      (record) =>
+        record.deviceId === device.id || record.accessPoint === device.accessPoint,
+    ) ?? null
+  )
 })
 
 function openAddDeviceModal() {
@@ -134,6 +157,8 @@ function closeTelemetryModal() {
           :barrier="barrier"
           :can-control="canControlBarrier"
           :command-log="commandLog"
+          :target-access-point-key="controlAccessPointModel"
+          :target-access-point-label="selectedAccessPointLabel"
           @mode="onModeChange"
           @open="onOpenBarrier"
           @close="onCloseBarrier"
@@ -155,6 +180,7 @@ function closeTelemetryModal() {
     <DeviceTelemetryModal
       :open="isTelemetryModalOpen"
       :device="selectedDevice"
+      :latest-record="selectedDeviceLatestRecord"
       @close="closeTelemetryModal"
     />
   </DashboardShell>
