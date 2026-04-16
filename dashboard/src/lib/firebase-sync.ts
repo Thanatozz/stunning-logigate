@@ -5,6 +5,7 @@ import {
   ref as dbRef,
   type Unsubscribe,
 } from 'firebase/database'
+import { DEVICE_OFFLINE_TIMEOUT_MS, inferDeviceStatusFromHeartbeat } from '@/lib/device-health'
 import { firebaseAccessPoint, firebaseDb, isFirebaseConfigured } from '@/lib/firebase'
 import { normalizeAccessPointKey } from '@/lib/access-point'
 import { useAlertsStore } from '@/stores/alerts.store'
@@ -35,6 +36,7 @@ let realtimeAccessPoint =
   normalizeAccessPointKey(firebaseAccessPoint) || 'porton_norte'
 let latestAccessRecords: AccessRecord[] = []
 let latestPlateReadingRecords: AccessRecord[] = []
+let deviceHealthInterval: ReturnType<typeof setInterval> | null = null
 
 function toNumber(value: unknown, fallback = 0) {
   const parsed = Number(value)
@@ -56,6 +58,11 @@ function toBoolean(value: unknown, fallback = false): boolean {
     if (['false', '0', 'no', 'off'].includes(normalized)) return false
   }
   return fallback
+}
+
+function isDistanceSensorDisabled(distanceCm: number | null) {
+  if (distanceCm === null) return false
+  return distanceCm >= 998.5
 }
 
 function toIso(value: unknown) {
@@ -118,13 +125,14 @@ function parseDeviceLastSeen(item: Record<string, unknown>): string {
 }
 
 function parseDeviceSignal(item: Record<string, unknown>, status: DeviceStatus): number {
+  if (status === 'offline') return 0
+
   const rawSignal = toNullableNumber(item.signal)
   if (rawSignal !== null) return clampPercent(rawSignal)
 
   const rawRssi = toNullableNumber(item.rssi)
   if (rawRssi !== null) return rssiToPercent(rawRssi)
 
-  if (status === 'offline') return 0
   return 0
 }
 
@@ -235,17 +243,20 @@ function parseRecentActivity(value: unknown): RecentActivityItem[] {
 
 function parseDevices(value: unknown): Device[] {
   const source = toObject(value)
+  const nowMs = Date.now()
   return Object.entries(source)
     .map(([id, raw]) => {
       const item = toObject(raw)
-      const status = normalizeDeviceStatus(item.status)
+      const statusFromPayload = normalizeDeviceStatus(item.status)
+      const lastSeen = parseDeviceLastSeen(item)
+      const status = inferDeviceStatusFromHeartbeat(statusFromPayload, lastSeen, nowMs)
       return {
         id,
         name: String(item.name ?? id),
         type: normalizeDeviceType(item.type),
         accessPoint: String(item.accessPoint ?? realtimeAccessPoint),
         status,
-        lastSeen: parseDeviceLastSeen(item),
+        lastSeen,
         signal: parseDeviceSignal(item, status),
         firmware: String(item.firmware ?? 'v1.0.0'),
         telemetry: parseDeviceTelemetry(item.telemetry),
@@ -254,18 +265,53 @@ function parseDevices(value: unknown): Device[] {
     .sort((a, b) => Date.parse(b.lastSeen) - Date.parse(a.lastSeen))
 }
 
+function refreshDerivedDeviceHealth() {
+  const devicesStore = useDevicesStore()
+  const nowMs = Date.now()
+  let changed = false
+
+  const next = devicesStore.devices.map((device) => {
+    const inferredStatus = inferDeviceStatusFromHeartbeat(device.status, device.lastSeen, nowMs)
+    const inferredSignal = inferredStatus === 'offline' ? 0 : clampPercent(device.signal)
+
+    if (inferredStatus === device.status && inferredSignal === device.signal) {
+      return device
+    }
+
+    changed = true
+    return {
+      ...device,
+      status: inferredStatus,
+      signal: inferredSignal,
+    }
+  })
+
+  if (changed) {
+    devicesStore.setDevices(next)
+  }
+}
+
 function parseDeviceTelemetry(value: unknown): DeviceTelemetry | undefined {
   const telemetry = toObject(value)
   if (!Object.keys(telemetry).length) return undefined
+
+  const entryDistanceCm = toNullableNumber(telemetry.entryDistanceCm)
+  const exitDistanceCm = toNullableNumber(telemetry.exitDistanceCm)
+  const entrySensorActive = isDistanceSensorDisabled(entryDistanceCm)
+    ? false
+    : toBoolean(telemetry.entrySensorActive)
+  const exitSensorActive = isDistanceSensorDisabled(exitDistanceCm)
+    ? false
+    : toBoolean(telemetry.exitSensorActive)
 
   return {
     barrierStatus: String(telemetry.barrierStatus ?? 'desconocido'),
     crossingDirection: String(telemetry.crossingDirection ?? 'none'),
     crossingState: String(telemetry.crossingState ?? 'idle'),
-    entryDistanceCm: toNullableNumber(telemetry.entryDistanceCm),
-    entrySensorActive: toBoolean(telemetry.entrySensorActive),
-    exitDistanceCm: toNullableNumber(telemetry.exitDistanceCm),
-    exitSensorActive: toBoolean(telemetry.exitSensorActive),
+    entryDistanceCm,
+    entrySensorActive,
+    exitDistanceCm,
+    exitSensorActive,
     uptimeMs: toNullableNumber(telemetry.uptimeMs),
   }
 }
@@ -463,6 +509,10 @@ export function startFirebaseRealtimeSync() {
     dashboardStore.setLastUpdated()
   })
 
+  if (deviceHealthInterval) clearInterval(deviceHealthInterval)
+  deviceHealthInterval = setInterval(refreshDerivedDeviceHealth, Math.max(1000, Math.floor(DEVICE_OFFLINE_TIMEOUT_MS / 5)))
+  refreshDerivedDeviceHealth()
+
   dashboardStore.setError('')
   running = true
   return true
@@ -470,6 +520,10 @@ export function startFirebaseRealtimeSync() {
 
 export function stopFirebaseRealtimeSync() {
   if (!running) return
+  if (deviceHealthInterval) {
+    clearInterval(deviceHealthInterval)
+    deviceHealthInterval = null
+  }
   for (const unsubscribe of unsubscribers.splice(0, unsubscribers.length)) {
     unsubscribe()
   }
