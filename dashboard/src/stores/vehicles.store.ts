@@ -35,6 +35,10 @@ export const useVehiclesStore = defineStore('vehicles', () => {
     vehicles.value = vehicles.value.filter((item) => item.plate !== plate)
   }
 
+  function setVehicles(payload: Vehicle[]) {
+    vehicles.value = [...payload]
+  }
+
   return {
     vehicles,
     search,
@@ -42,5 +46,6 @@ export const useVehiclesStore = defineStore('vehicles', () => {
     setSearch,
     upsertVehicle,
     removeVehicle,
+    setVehicles,
   }
 })

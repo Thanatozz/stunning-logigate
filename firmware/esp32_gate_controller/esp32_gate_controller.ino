@@ -594,6 +594,8 @@ unsigned long firebaseAuthLockMs = FIREBASE_AUTH_LOCK_BASE_MS;
 
     JsonObject first = results[0];
     plateOut = String(first["plate"] | "");
+    plateOut.trim();
+    plateOut.toUpperCase();
     scoreOut = first["score"] | 0.0f;
     confidenceOut = first["dscore"] | 0.0f;
     regionOut = String(first["region"]["code"] | "");
@@ -613,6 +615,9 @@ unsigned long firebaseAuthLockMs = FIREBASE_AUTH_LOCK_BASE_MS;
     const String& region
   ) {
     String eventId = String(DEVICE_ID) + "-pr-" + String(millis()) + "-" + String(static_cast<uint32_t>(esp_random()), HEX);
+    String normalizedPlate = plate;
+    normalizedPlate.trim();
+    normalizedPlate.toUpperCase();
     String recognitionStatusCode;
     String recognitionStatusMessage;
 
@@ -638,8 +643,8 @@ unsigned long firebaseAuthLockMs = FIREBASE_AUTH_LOCK_BASE_MS;
 
     doc["requestOk"] = requestOk;
     doc["httpCode"] = httpCode;
-    doc["hasPlate"] = hasPlate;
-    doc["plate"] = plate;
+    doc["hasPlate"] = hasPlate && normalizedPlate.length() > 0;
+    doc["plate"] = normalizedPlate;
     doc["score"] = score;
     doc["confidence"] = confidence;
     doc["region"] = region;

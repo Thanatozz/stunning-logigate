@@ -22,7 +22,7 @@
     "commands": {
       "$accessPoint": {
         ".read": "auth != null",
-        ".write": "auth != null && (auth.token.admin === true || auth.token.supervisor === true || root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'supervisor' || auth.token.isCloudFunction === true)",
+        ".write": "auth != null && (auth.token.admin === true || auth.token.supervisor === true || root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'supervisor' || auth.token.isCloudFunction === true || auth.token.device_access_point === $accessPoint || (root.child('users').child(auth.uid).child('role').val() === 'esp_device' && (root.child('users').child(auth.uid).child('accessPoint').val() === $accessPoint || root.child('users').child(auth.uid).child('device_access_point').val() === $accessPoint)))",
         "mode": {
           ".validate": "newData.isString() && (newData.val() === 'automatico' || newData.val() === 'manual_remoto' || newData.val() === 'manual_fisico')"
         },

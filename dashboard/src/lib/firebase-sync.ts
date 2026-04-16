@@ -3,17 +3,20 @@ import {
   onValue,
   query,
   ref as dbRef,
+  set,
   type Unsubscribe,
 } from 'firebase/database'
 import { DEVICE_OFFLINE_TIMEOUT_MS, inferDeviceStatusFromHeartbeat } from '@/lib/device-health'
 import { firebaseAccessPoint, firebaseDb, isFirebaseConfigured } from '@/lib/firebase'
 import { normalizeAccessPointKey } from '@/lib/access-point'
 import { useAlertsStore } from '@/stores/alerts.store'
+import { useAuthStore } from '@/stores/auth.store'
 import { useBarrierStore } from '@/stores/barrier.store'
 import { useDashboardStore } from '@/stores/dashboard.store'
 import { useDevicesStore } from '@/stores/devices.store'
 import { useHistoryStore } from '@/stores/history.store'
 import { useSettingsStore } from '@/stores/settings.store'
+import { useVehiclesStore } from '@/stores/vehicles.store'
 import type {
   AccessEventType,
   AccessRecord,
@@ -29,6 +32,9 @@ import type {
   DeviceType,
   RecentActivityItem,
   TruckInside,
+  Vehicle,
+  VehicleCategory,
+  VehicleStatus,
 } from '@/types/domain'
 
 let running = false
@@ -38,6 +44,12 @@ let realtimeAccessPoint =
 let latestAccessRecords: AccessRecord[] = []
 let latestPlateReadingRecords: AccessRecord[] = []
 let deviceHealthInterval: ReturnType<typeof setInterval> | null = null
+let autoAlertSignatures = new Map<string, string>()
+let activeOfflineAlertIds = new Set<string>()
+let activeStayAlertIds = new Set<string>()
+let offlineAlertContextById = new Map<string, { name: string; accessPoint: string }>()
+let stayAlertContextById = new Map<string, { plate: string; accessPoint: string; limitMinutes: number }>()
+let excesoAlertActive = false
 
 function toNumber(value: unknown, fallback = 0) {
   const parsed = Number(value)
@@ -170,6 +182,41 @@ function normalizeEventType(value: unknown): AccessEventType {
   return 'ingreso'
 }
 
+function normalizeVehicleStatus(value: unknown): VehicleStatus {
+  if (value === 'autorizado' || value === 'observacion' || value === 'bloqueado') {
+    return value
+  }
+  return 'autorizado'
+}
+
+function normalizeVehicleCategory(value: unknown): VehicleCategory {
+  if (
+    value === 'carga_pesada' ||
+    value === 'carga_liviana' ||
+    value === 'refrigerado' ||
+    value === 'especial'
+  ) {
+    return value
+  }
+  return 'carga_liviana'
+}
+
+function normalizePlate(value: unknown): string {
+  const raw = String(value ?? '').toUpperCase()
+  return raw.replace(/[^A-Z0-9]/g, '')
+}
+
+function normalizePlateDisplay(value: unknown, fallback = 'SIN-PLACA'): string {
+  const raw = String(value ?? '').trim().toUpperCase()
+  return raw.length ? raw : fallback
+}
+
+function sanitizeRtdbKeySegment(value: string): string {
+  const trimmed = value.trim()
+  if (!trimmed) return 'item'
+  return trimmed.replace(/[.#$/\[\]\s]/g, '_')
+}
+
 function normalizeAlertType(value: unknown): AlertType {
   const valid: AlertType[] = [
     'exceso_camiones',
@@ -216,7 +263,7 @@ function parseTrucksInside(value: unknown): TruckInside[] {
     .map(([plate, raw]) => {
       const item = toObject(raw)
       return {
-        plate: String(item.plate ?? plate),
+        plate: normalizePlateDisplay(item.plate ?? plate),
         company: String(item.company ?? 'Sin empresa'),
         enteredAt: toIso(item.enteredAt),
         accumulatedMinutes: toNumber(item.accumulatedMinutes, 0),
@@ -246,6 +293,30 @@ function parseSettings(value: unknown): Record<string, unknown> {
   return toObject(value)
 }
 
+function parseVehicleRegistry(value: unknown): Vehicle[] {
+  const source = toObject(value)
+  const nowIso = new Date().toISOString()
+  return Object.entries(source)
+    .map(([key, raw]) => {
+      const item = toObject(raw)
+      const plateDisplay = normalizePlateDisplay(item.plate ?? key, '')
+      const normalizedPlate = normalizePlate(plateDisplay)
+      if (!normalizedPlate) return null
+
+      return {
+        plate: plateDisplay,
+        company: String(item.company ?? 'Sin empresa'),
+        cargoType: String(item.cargoType ?? 'general'),
+        category: normalizeVehicleCategory(item.category),
+        status: normalizeVehicleStatus(item.status),
+        active: toBoolean(item.active, true),
+        createdAt: toIso(item.createdAt ?? nowIso),
+      } satisfies Vehicle
+    })
+    .filter((item): item is Vehicle => item !== null)
+    .sort((a, b) => a.plate.localeCompare(b.plate))
+}
+
 function parseDevices(value: unknown): Device[] {
   const source = toObject(value)
   const nowMs = Date.now()
@@ -271,7 +342,11 @@ function parseDevices(value: unknown): Device[] {
 }
 
 function refreshDerivedDeviceHealth() {
+  const authStore = useAuthStore()
+  const dashboardStore = useDashboardStore()
   const devicesStore = useDevicesStore()
+  const settingsStore = useSettingsStore()
+  const vehiclesStore = useVehiclesStore()
   const nowMs = Date.now()
   let changed = false
 
@@ -293,6 +368,13 @@ function refreshDerivedDeviceHealth() {
 
   if (changed) {
     devicesStore.setDevices(next)
+    evaluateAndSyncDerivedAlerts({
+      authStore,
+      dashboardStore,
+      devicesStore,
+      settingsStore,
+      vehiclesStore,
+    })
   }
 }
 
@@ -333,7 +415,7 @@ function parseAlerts(value: unknown): Alert[] {
         severity: normalizeAlertSeverity(item.severity),
         status: normalizeAlertStatus(item.status),
         timestamp: toIso(item.timestamp),
-        relatedPlate: item.relatedPlate ? String(item.relatedPlate) : undefined,
+        relatedPlate: item.relatedPlate ? normalizePlateDisplay(item.relatedPlate) : undefined,
         source: String(item.source ?? 'RTDB'),
       }
     })
@@ -347,7 +429,7 @@ function parseAccessRecords(value: unknown): AccessRecord[] {
       const item = toObject(raw)
       return {
         id: String(item.id ?? id),
-        plate: String(item.plate ?? 'SIN-PLACA'),
+        plate: normalizePlateDisplay(item.plate),
         company: String(item.company ?? 'Sin empresa'),
         eventType: normalizeEventType(item.eventType),
         timestamp: toIso(item.timestamp),
@@ -379,7 +461,7 @@ function parsePlateReadingsAsAccessRecords(value: unknown): AccessRecord[] {
   return Object.entries(source)
     .map(([id, raw]) => {
       const item = toObject(raw)
-      const plate = String(item.plate ?? '').trim()
+      const plate = normalizePlateDisplay(item.plate, '')
       return {
         id: `pr-${id}`,
         plate: plate.length ? plate : 'SIN-PLACA',
@@ -409,6 +491,314 @@ function mergeHistoryRecords(records: AccessRecord[], plateReadings: AccessRecor
   }
 
   return Array.from(dedup.values()).sort((a, b) => Date.parse(b.timestamp) - Date.parse(a.timestamp))
+}
+
+function detectInconsistencyEvents(records: AccessRecord[]): AccessRecord[] {
+  const sorted = [...records].sort(
+    (a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp),
+  )
+  const insideByPlate = new Set<string>()
+  const inconsistencies: AccessRecord[] = []
+
+  for (const record of sorted) {
+    const plateKey = normalizePlate(record.plate)
+    if (!plateKey || plateKey === 'SINPLACA') continue
+
+    if (record.eventType === 'ingreso') {
+      if (insideByPlate.has(plateKey)) {
+        inconsistencies.push(record)
+      } else {
+        insideByPlate.add(plateKey)
+      }
+      continue
+    }
+
+    if (!insideByPlate.has(plateKey)) {
+      inconsistencies.push(record)
+      continue
+    }
+    insideByPlate.delete(plateKey)
+  }
+
+  return inconsistencies
+}
+
+function buildAlertSignature(alert: Alert): string {
+  return [
+    alert.type,
+    alert.severity,
+    alert.status,
+    alert.description,
+    alert.relatedPlate ?? '',
+    alert.source,
+  ].join('|')
+}
+
+async function writeAutoAlert(alert: Alert) {
+  if (!firebaseDb) return
+
+  const signature = buildAlertSignature(alert)
+  if (autoAlertSignatures.get(alert.id) === signature) return
+  autoAlertSignatures.set(alert.id, signature)
+
+  try {
+    await set(dbRef(firebaseDb, `alerts/${alert.id}`), alert)
+  } catch (error) {
+    autoAlertSignatures.delete(alert.id)
+    console.warn('[LogiGate][alerts] No se pudo sincronizar alerta automatica', {
+      id: alert.id,
+      error,
+    })
+  }
+}
+
+function emitAutoAlert(payload: Omit<Alert, 'timestamp'>) {
+  const next: Alert = {
+    ...payload,
+    timestamp: new Date().toISOString(),
+  }
+  void writeAutoAlert(next)
+}
+
+function hydrateAutoAlertStateFromRemote(alerts: Alert[]) {
+  activeOfflineAlertIds = new Set(
+    alerts
+      .filter(
+        (alert) =>
+          alert.id.startsWith('auto-dispositivo-offline-') &&
+          alert.status === 'activa',
+      )
+      .map((alert) => alert.id),
+  )
+
+  activeStayAlertIds = new Set(
+    alerts
+      .filter(
+        (alert) =>
+          alert.id.startsWith('auto-permanencia-') && alert.status === 'activa',
+      )
+      .map((alert) => alert.id),
+  )
+
+  excesoAlertActive = alerts.some(
+    (alert) => alert.id === 'auto-exceso-camiones' && alert.status === 'activa',
+  )
+}
+
+function evaluateAndSyncDerivedAlerts(params: {
+  authStore: ReturnType<typeof useAuthStore>
+  dashboardStore: ReturnType<typeof useDashboardStore>
+  devicesStore: ReturnType<typeof useDevicesStore>
+  settingsStore: ReturnType<typeof useSettingsStore>
+  vehiclesStore: ReturnType<typeof useVehiclesStore>
+}) {
+  const {
+    authStore,
+    dashboardStore,
+    devicesStore,
+    settingsStore,
+    vehiclesStore,
+  } = params
+
+  if (!firebaseDb || !isFirebaseConfigured) return
+  if (authStore.currentRole !== 'admin') return
+
+  const source = 'Motor de alertas (dashboard)'
+  const vehicleRegistry = new Map<string, Vehicle>()
+  for (const vehicle of vehiclesStore.vehicles) {
+    const plateKey = normalizePlate(vehicle.plate)
+    if (!plateKey) continue
+    vehicleRegistry.set(plateKey, vehicle)
+  }
+
+  const recentRecords = mergeHistoryRecords(
+    latestAccessRecords,
+    latestPlateReadingRecords,
+  ).slice(0, 250)
+
+  if (vehicleRegistry.size > 0) {
+    for (const record of recentRecords) {
+      if (record.eventType !== 'ingreso') continue
+      const plateKey = normalizePlate(record.plate)
+      if (!plateKey || plateKey === 'SINPLACA') continue
+
+      const vehicle = vehicleRegistry.get(plateKey)
+      if (vehicle && vehicle.active && vehicle.status !== 'bloqueado') continue
+
+      const reason =
+        !vehicle
+          ? 'no registrada en flota autorizada'
+          : !vehicle.active
+            ? 'registrada como inactiva'
+            : 'bloqueada para acceso'
+      const severity: AlertSeverity =
+        vehicle?.status === 'bloqueado' || vehicle?.active === false
+          ? 'critical'
+          : 'warning'
+      const alertId = `auto-vehiculo-no-autorizado-${sanitizeRtdbKeySegment(
+        record.id,
+      )}`
+
+      emitAutoAlert({
+        id: alertId,
+        type: 'vehiculo_no_autorizado',
+        description: `Patente ${record.plate} ${reason}.`,
+        severity,
+        status: 'activa',
+        source,
+        relatedPlate: record.plate,
+      })
+    }
+  }
+
+  const inconsistencies = detectInconsistencyEvents(latestAccessRecords)
+  for (const record of inconsistencies) {
+    const alertId = `auto-inconsistencia-${sanitizeRtdbKeySegment(record.id)}`
+    const description =
+      record.eventType === 'ingreso'
+        ? `Ingreso duplicado detectado para ${record.plate}.`
+        : `Salida sin ingreso previo para ${record.plate}.`
+
+    emitAutoAlert({
+      id: alertId,
+      type: 'inconsistencia',
+      description,
+      severity: 'warning',
+      status: 'activa',
+      source,
+      relatedPlate: record.plate,
+    })
+  }
+
+  const nextOfflineIds = new Set<string>()
+  for (const device of devicesStore.devices) {
+    if (device.status !== 'offline') continue
+    const alertId = `auto-dispositivo-offline-${sanitizeRtdbKeySegment(
+      device.id,
+    )}`
+    nextOfflineIds.add(alertId)
+    offlineAlertContextById.set(alertId, {
+      name: device.name,
+      accessPoint: device.accessPoint,
+    })
+
+    emitAutoAlert({
+      id: alertId,
+      type: 'dispositivo_offline',
+      description: `${device.name} sin conexion en ${device.accessPoint}.`,
+      severity: 'critical',
+      status: 'activa',
+      source,
+    })
+  }
+
+  for (const alertId of activeOfflineAlertIds) {
+    if (nextOfflineIds.has(alertId)) continue
+    const context = offlineAlertContextById.get(alertId)
+    emitAutoAlert({
+      id: alertId,
+      type: 'dispositivo_offline',
+      description: context
+        ? `${context.name} recupero conectividad en ${context.accessPoint}.`
+        : 'Dispositivo recupero conectividad.',
+      severity: 'info',
+      status: 'resuelta',
+      source,
+    })
+    offlineAlertContextById.delete(alertId)
+  }
+  activeOfflineAlertIds = nextOfflineIds
+
+  const maxStayMinutes = Math.max(
+    1,
+    Math.floor(
+      Number(
+        settingsStore.settings.maxStayMinutes ??
+          dashboardStore.plantState.maxCapacity,
+      ),
+    ),
+  )
+  const nextStayIds = new Set<string>()
+  for (const truck of dashboardStore.plantState.trucksInside) {
+    if (truck.accumulatedMinutes <= maxStayMinutes) continue
+
+    const plateKey = normalizePlate(truck.plate) || sanitizeRtdbKeySegment(truck.plate)
+    const accessPointKey =
+      normalizeAccessPointKey(truck.accessPoint) ||
+      sanitizeRtdbKeySegment(truck.accessPoint)
+    const alertId = `auto-permanencia-${sanitizeRtdbKeySegment(
+      plateKey,
+    )}-${sanitizeRtdbKeySegment(accessPointKey)}`
+    nextStayIds.add(alertId)
+    stayAlertContextById.set(alertId, {
+      plate: truck.plate,
+      accessPoint: truck.accessPoint,
+      limitMinutes: maxStayMinutes,
+    })
+
+    emitAutoAlert({
+      id: alertId,
+      type: 'permanencia_excesiva',
+      description: `Patente ${truck.plate} supera ${maxStayMinutes} minutos en planta.`,
+      severity: 'warning',
+      status: 'activa',
+      source,
+      relatedPlate: truck.plate,
+    })
+  }
+
+  for (const alertId of activeStayAlertIds) {
+    if (nextStayIds.has(alertId)) continue
+    const context = stayAlertContextById.get(alertId)
+    emitAutoAlert({
+      id: alertId,
+      type: 'permanencia_excesiva',
+      description: context
+        ? `Permanencia normalizada para ${context.plate} (${context.accessPoint}).`
+        : 'Permanencia normalizada.',
+      severity: 'info',
+      status: 'resuelta',
+      source,
+      relatedPlate: context?.plate,
+    })
+    stayAlertContextById.delete(alertId)
+  }
+  activeStayAlertIds = nextStayIds
+
+  const maxTrucksThreshold = Math.max(
+    1,
+    Math.floor(
+      Number(
+        settingsStore.settings.maxTrucks ??
+          dashboardStore.plantState.maxCapacity ??
+          1,
+      ),
+    ),
+  )
+  const isExcesoCamiones =
+    dashboardStore.plantState.currentCount > maxTrucksThreshold
+
+  if (isExcesoCamiones) {
+    excesoAlertActive = true
+    emitAutoAlert({
+      id: 'auto-exceso-camiones',
+      type: 'exceso_camiones',
+      description: `Ocupacion excede umbral configurado (${maxTrucksThreshold}).`,
+      severity: 'critical',
+      status: 'activa',
+      source,
+    })
+  } else if (excesoAlertActive) {
+    emitAutoAlert({
+      id: 'auto-exceso-camiones',
+      type: 'exceso_camiones',
+      description: 'Ocupacion bajo el umbral configurado.',
+      severity: 'info',
+      status: 'resuelta',
+      source,
+    })
+    excesoAlertActive = false
+  }
 }
 
 function addListener(path: string, callback: (value: unknown) => void) {
@@ -441,18 +831,36 @@ function addLimitedListener(path: string, limit: number, callback: (value: unkno
 export function startFirebaseRealtimeSync() {
   if (!isFirebaseConfigured || !firebaseDb || running) return false
 
+  const authStore = useAuthStore()
   const dashboardStore = useDashboardStore()
   const devicesStore = useDevicesStore()
+  const vehiclesStore = useVehiclesStore()
   const alertsStore = useAlertsStore()
   const historyStore = useHistoryStore()
   const barrierStore = useBarrierStore()
   const settingsStore = useSettingsStore()
   latestAccessRecords = []
   latestPlateReadingRecords = []
+  autoAlertSignatures = new Map<string, string>()
+  activeOfflineAlertIds = new Set<string>()
+  activeStayAlertIds = new Set<string>()
+  offlineAlertContextById = new Map<string, { name: string; accessPoint: string }>()
+  stayAlertContextById = new Map<
+    string,
+    { plate: string; accessPoint: string; limitMinutes: number }
+  >()
+  excesoAlertActive = false
 
   addListener('dashboardCache/kpiSummary', (value) => {
     dashboardStore.setKpiFromRemote(toObject(value))
     dashboardStore.setLastUpdated()
+    evaluateAndSyncDerivedAlerts({
+      authStore,
+      dashboardStore,
+      devicesStore,
+      settingsStore,
+      vehiclesStore,
+    })
   })
 
   addListener('dashboardCache/dailySummary', (value) => {
@@ -479,11 +887,37 @@ export function startFirebaseRealtimeSync() {
       trucksInside: parseTrucksInside(state.trucksInside),
     })
     dashboardStore.setLastUpdated()
+    evaluateAndSyncDerivedAlerts({
+      authStore,
+      dashboardStore,
+      devicesStore,
+      settingsStore,
+      vehiclesStore,
+    })
   })
 
   addListener('devices', (value) => {
     devicesStore.setDevices(parseDevices(value))
     dashboardStore.setLastUpdated()
+    evaluateAndSyncDerivedAlerts({
+      authStore,
+      dashboardStore,
+      devicesStore,
+      settingsStore,
+      vehiclesStore,
+    })
+  })
+
+  addListener('vehicles', (value) => {
+    vehiclesStore.setVehicles(parseVehicleRegistry(value))
+    dashboardStore.setLastUpdated()
+    evaluateAndSyncDerivedAlerts({
+      authStore,
+      dashboardStore,
+      devicesStore,
+      settingsStore,
+      vehiclesStore,
+    })
   })
 
   addListener(`barrier/${realtimeAccessPoint}`, (value) => {
@@ -505,23 +939,53 @@ export function startFirebaseRealtimeSync() {
     if (!Object.keys(settings).length) return
     settingsStore.applyRemoteSettings(settings)
     dashboardStore.setLastUpdated()
+    evaluateAndSyncDerivedAlerts({
+      authStore,
+      dashboardStore,
+      devicesStore,
+      settingsStore,
+      vehiclesStore,
+    })
   })
 
   addLimitedListener('alerts', 200, (value) => {
-    alertsStore.setAlerts(parseAlerts(value))
+    const parsedAlerts = parseAlerts(value)
+    alertsStore.setAlerts(parsedAlerts)
+    hydrateAutoAlertStateFromRemote(parsedAlerts)
     dashboardStore.setLastUpdated()
+    evaluateAndSyncDerivedAlerts({
+      authStore,
+      dashboardStore,
+      devicesStore,
+      settingsStore,
+      vehiclesStore,
+    })
   })
 
   addLimitedListener('accessRecords', 500, (value) => {
     latestAccessRecords = parseAccessRecords(value)
     historyStore.setRecords(mergeHistoryRecords(latestAccessRecords, latestPlateReadingRecords))
     dashboardStore.setLastUpdated()
+    evaluateAndSyncDerivedAlerts({
+      authStore,
+      dashboardStore,
+      devicesStore,
+      settingsStore,
+      vehiclesStore,
+    })
   })
 
   addLimitedListener('ingest/plate_readings', 500, (value) => {
     latestPlateReadingRecords = parsePlateReadingsAsAccessRecords(value)
     historyStore.setRecords(mergeHistoryRecords(latestAccessRecords, latestPlateReadingRecords))
     dashboardStore.setLastUpdated()
+    evaluateAndSyncDerivedAlerts({
+      authStore,
+      dashboardStore,
+      devicesStore,
+      settingsStore,
+      vehiclesStore,
+    })
   })
 
   if (deviceHealthInterval) clearInterval(deviceHealthInterval)
@@ -542,6 +1006,15 @@ export function stopFirebaseRealtimeSync() {
   for (const unsubscribe of unsubscribers.splice(0, unsubscribers.length)) {
     unsubscribe()
   }
+  autoAlertSignatures = new Map<string, string>()
+  activeOfflineAlertIds = new Set<string>()
+  activeStayAlertIds = new Set<string>()
+  offlineAlertContextById = new Map<string, { name: string; accessPoint: string }>()
+  stayAlertContextById = new Map<
+    string,
+    { plate: string; accessPoint: string; limitMinutes: number }
+  >()
+  excesoAlertActive = false
   running = false
 }
 
