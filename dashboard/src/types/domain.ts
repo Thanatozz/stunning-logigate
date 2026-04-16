@@ -78,6 +78,17 @@ export interface Alert {
 export type DeviceType = 'esp32_cam' | 'sensor_ir' | 'sensor_ultrasonico' | 'barrera_servo'
 export type DeviceStatus = 'online' | 'offline' | 'degradado'
 
+export interface DeviceTelemetry {
+  barrierStatus: string
+  crossingDirection: string
+  crossingState: string
+  entryDistanceCm: number | null
+  entrySensorActive: boolean
+  exitDistanceCm: number | null
+  exitSensorActive: boolean
+  uptimeMs: number | null
+}
+
 export interface Device {
   id: string
   name: string
@@ -87,6 +98,7 @@ export interface Device {
   lastSeen: string
   signal: number
   firmware: string
+  telemetry?: DeviceTelemetry
 }
 
 export type BarrierStatus = 'abierta' | 'cerrada' | 'en_transicion'

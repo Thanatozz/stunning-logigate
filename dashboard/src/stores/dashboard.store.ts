@@ -49,7 +49,11 @@ export const useDashboardStore = defineStore('dashboard', () => {
     payload: Partial<PlantState> & { trucksInside?: TruckInside[] },
   ) {
     const maxCapacity = Number(payload.maxCapacity ?? plantState.value.maxCapacity)
-    const currentCount = Number(payload.currentCount ?? payload.trucksInside?.length ?? plantState.value.currentCount)
+    const trucksInside = payload.trucksInside
+    const hasTrucksInside = Array.isArray(trucksInside)
+    const currentCount = Number(
+      hasTrucksInside ? trucksInside.length : payload.currentCount ?? plantState.value.currentCount,
+    )
     const occupancyRaw = payload.occupancyLevel
     const occupancyLevel: OccupancyLevel =
       occupancyRaw === 'alto' || occupancyRaw === 'medio' || occupancyRaw === 'bajo'

@@ -6,6 +6,7 @@ import DevicesStatusPanel from '@/components/dashboard/DevicesStatusPanel.vue'
 import BarrierControlCard from '@/components/dashboard/BarrierControlCard.vue'
 import RecentActivityFeed from '@/components/dashboard/RecentActivityFeed.vue'
 import DeviceFormModal from '@/components/dashboard/DeviceFormModal.vue'
+import DeviceTelemetryModal from '@/components/dashboard/DeviceTelemetryModal.vue'
 import { useDashboardPage } from '@/composables/useDashboardPage'
 import { formatDateTime } from '@/composables/useKpi'
 import { useDevicesStore } from '@/stores/devices.store'
@@ -37,6 +38,8 @@ const devicesStore = useDevicesStore()
 const settingsStore = useSettingsStore()
 const { controlAccessPoint, activeAccessPointOptions } = storeToRefs(settingsStore)
 const isDeviceModalOpen = ref(false)
+const isTelemetryModalOpen = ref(false)
+const selectedDeviceId = ref<string | null>(null)
 
 const controlAccessPointModel = computed({
   get: () => controlAccessPoint.value,
@@ -47,6 +50,11 @@ const deviceAccessPoints = computed(() => {
   const options = activeAccessPointOptions.value.map((item) => item.label)
   if (options.length) return options
   return ['Porton Norte']
+})
+
+const selectedDevice = computed(() => {
+  if (!selectedDeviceId.value) return null
+  return devices.value.find((item) => item.id === selectedDeviceId.value) ?? null
 })
 
 function openAddDeviceModal() {
@@ -60,6 +68,15 @@ function closeAddDeviceModal() {
 function saveDevice(payload: Parameters<typeof devicesStore.addDevice>[0]) {
   devicesStore.addDevice(payload)
   isDeviceModalOpen.value = false
+}
+
+function openTelemetryModal(deviceId: string) {
+  selectedDeviceId.value = deviceId
+  isTelemetryModalOpen.value = true
+}
+
+function closeTelemetryModal() {
+  isTelemetryModalOpen.value = false
 }
 </script>
 
@@ -107,7 +124,10 @@ function saveDevice(payload: Parameters<typeof devicesStore.addDevice>[0]) {
 
     <section class="grid gap-4 xl:grid-cols-12">
       <div class="xl:col-span-6">
-        <DevicesStatusPanel :devices="devices" />
+        <DevicesStatusPanel
+          :devices="devices"
+          @select-device="openTelemetryModal"
+        />
       </div>
       <div class="xl:col-span-6">
         <BarrierControlCard
@@ -130,6 +150,12 @@ function saveDevice(payload: Parameters<typeof devicesStore.addDevice>[0]) {
       :access-points="deviceAccessPoints"
       @close="closeAddDeviceModal"
       @save="saveDevice"
+    />
+
+    <DeviceTelemetryModal
+      :open="isTelemetryModalOpen"
+      :device="selectedDevice"
+      @close="closeTelemetryModal"
     />
   </DashboardShell>
 </template>

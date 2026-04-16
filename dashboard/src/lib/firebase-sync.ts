@@ -23,6 +23,7 @@ import type {
   BarrierStatus,
   Device,
   DeviceStatus,
+  DeviceTelemetry,
   DeviceType,
   RecentActivityItem,
   TruckInside,
@@ -32,6 +33,8 @@ let running = false
 const unsubscribers: Unsubscribe[] = []
 let realtimeAccessPoint =
   normalizeAccessPointKey(firebaseAccessPoint) || 'porton_norte'
+let latestAccessRecords: AccessRecord[] = []
+let latestPlateReadingRecords: AccessRecord[] = []
 
 function toNumber(value: unknown, fallback = 0) {
   const parsed = Number(value)
@@ -44,8 +47,85 @@ function toNullableNumber(value: unknown): number | null {
   return Number.isFinite(parsed) ? parsed : null
 }
 
+function toBoolean(value: unknown, fallback = false): boolean {
+  if (typeof value === 'boolean') return value
+  if (typeof value === 'number') return value !== 0
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase()
+    if (['true', '1', 'yes', 'si', 'on'].includes(normalized)) return true
+    if (['false', '0', 'no', 'off'].includes(normalized)) return false
+  }
+  return fallback
+}
+
 function toIso(value: unknown) {
   return typeof value === 'string' && value.length > 0 ? value : new Date().toISOString()
+}
+
+function clampPercent(value: number) {
+  if (!Number.isFinite(value)) return 0
+  return Math.max(0, Math.min(100, Math.round(value)))
+}
+
+function rssiToPercent(rssi: number) {
+  if (!Number.isFinite(rssi)) return 0
+  if (rssi <= -100) return 0
+  if (rssi >= -50) return 100
+  return clampPercent(2 * (rssi + 100))
+}
+
+function toTimestampMs(value: unknown): number | null {
+  if (value === null || value === undefined || value === '') return null
+
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    if (value > 1_000_000_000_000) return Math.trunc(value)
+    if (value > 1_000_000_000) return Math.trunc(value * 1000)
+    return null
+  }
+
+  if (typeof value === 'string') {
+    const parsedNumber = Number(value)
+    if (Number.isFinite(parsedNumber)) return toTimestampMs(parsedNumber)
+    const parsedDate = Date.parse(value)
+    return Number.isNaN(parsedDate) ? null : parsedDate
+  }
+
+  return null
+}
+
+function isReasonableTimestamp(ms: number | null): ms is number {
+  if (!Number.isFinite(ms as number)) return false
+  const value = ms as number
+  const min = Date.UTC(2020, 0, 1)
+  const max = Date.now() + 1000 * 60 * 60 * 24 * 30
+  return value >= min && value <= max
+}
+
+function parseDeviceLastSeen(item: Record<string, unknown>): string {
+  const candidates = [
+    toTimestampMs(item.lastSeenServer),
+    toTimestampMs(item.lastSeenEpochMs),
+    toTimestampMs(item.lastSeen),
+  ]
+
+  for (const candidate of candidates) {
+    if (isReasonableTimestamp(candidate)) {
+      return new Date(candidate).toISOString()
+    }
+  }
+
+  return toIso(item.lastSeen)
+}
+
+function parseDeviceSignal(item: Record<string, unknown>, status: DeviceStatus): number {
+  const rawSignal = toNullableNumber(item.signal)
+  if (rawSignal !== null) return clampPercent(rawSignal)
+
+  const rawRssi = toNullableNumber(item.rssi)
+  if (rawRssi !== null) return rssiToPercent(rawRssi)
+
+  if (status === 'offline') return 0
+  return 0
 }
 
 function normalizeDeviceType(value: unknown): DeviceType {
@@ -158,18 +238,36 @@ function parseDevices(value: unknown): Device[] {
   return Object.entries(source)
     .map(([id, raw]) => {
       const item = toObject(raw)
+      const status = normalizeDeviceStatus(item.status)
       return {
         id,
         name: String(item.name ?? id),
         type: normalizeDeviceType(item.type),
         accessPoint: String(item.accessPoint ?? realtimeAccessPoint),
-        status: normalizeDeviceStatus(item.status),
-        lastSeen: toIso(item.lastSeen),
-        signal: toNumber(item.signal, 0),
+        status,
+        lastSeen: parseDeviceLastSeen(item),
+        signal: parseDeviceSignal(item, status),
         firmware: String(item.firmware ?? 'v1.0.0'),
+        telemetry: parseDeviceTelemetry(item.telemetry),
       }
     })
     .sort((a, b) => Date.parse(b.lastSeen) - Date.parse(a.lastSeen))
+}
+
+function parseDeviceTelemetry(value: unknown): DeviceTelemetry | undefined {
+  const telemetry = toObject(value)
+  if (!Object.keys(telemetry).length) return undefined
+
+  return {
+    barrierStatus: String(telemetry.barrierStatus ?? 'desconocido'),
+    crossingDirection: String(telemetry.crossingDirection ?? 'none'),
+    crossingState: String(telemetry.crossingState ?? 'idle'),
+    entryDistanceCm: toNullableNumber(telemetry.entryDistanceCm),
+    entrySensorActive: toBoolean(telemetry.entrySensorActive),
+    exitDistanceCm: toNullableNumber(telemetry.exitDistanceCm),
+    exitSensorActive: toBoolean(telemetry.exitSensorActive),
+    uptimeMs: toNullableNumber(telemetry.uptimeMs),
+  }
 }
 
 function parseAlerts(value: unknown): Alert[] {
@@ -212,6 +310,56 @@ function parseAccessRecords(value: unknown): AccessRecord[] {
     .sort((a, b) => Date.parse(b.timestamp) - Date.parse(a.timestamp))
 }
 
+function normalizeEventTypeFromPlateReading(item: Record<string, unknown>): AccessEventType {
+  const directionHint = String(item.directionHint ?? item.crossingDirection ?? '').toLowerCase()
+  const trigger = String(item.trigger ?? '').toLowerCase()
+  if (directionHint === 'salida' || trigger.includes('exit')) return 'salida'
+  return 'ingreso'
+}
+
+function normalizeOcrConfidenceFromPlateReading(item: Record<string, unknown>): number {
+  const raw = toNumber(item.ocrConfidence ?? item.confidence ?? item.score, 0)
+  if (raw <= 1) return Math.round(raw * 1000) / 10
+  return raw
+}
+
+function parsePlateReadingsAsAccessRecords(value: unknown): AccessRecord[] {
+  const source = toObject(value)
+  return Object.entries(source)
+    .map(([id, raw]) => {
+      const item = toObject(raw)
+      const plate = String(item.plate ?? '').trim()
+      return {
+        id: `pr-${id}`,
+        plate: plate.length ? plate : 'SIN-PLACA',
+        company: String(item.company ?? 'Sin empresa'),
+        eventType: normalizeEventTypeFromPlateReading(item),
+        timestamp: toIso(item.capturedAt ?? item.timestamp),
+        accessPoint: String(item.accessPoint ?? realtimeAccessPoint),
+        ocrConfidence: normalizeOcrConfidenceFromPlateReading(item),
+        stayMinutes: null,
+        barrierMode: normalizeBarrierMode(item.mode),
+        deviceId: String(item.deviceId ?? 'device-unknown'),
+      }
+    })
+    .sort((a, b) => Date.parse(b.timestamp) - Date.parse(a.timestamp))
+}
+
+function mergeHistoryRecords(records: AccessRecord[], plateReadings: AccessRecord[]): AccessRecord[] {
+  const merged = [...records, ...plateReadings]
+  const dedup = new Map<string, AccessRecord>()
+
+  for (const row of merged) {
+    const key = `${row.plate}|${row.timestamp}|${row.eventType}|${row.accessPoint}`
+    const existing = dedup.get(key)
+    if (!existing || existing.id.startsWith('pr-')) {
+      dedup.set(key, row)
+    }
+  }
+
+  return Array.from(dedup.values()).sort((a, b) => Date.parse(b.timestamp) - Date.parse(a.timestamp))
+}
+
 function addListener(path: string, callback: (value: unknown) => void) {
   if (!firebaseDb) return
   const unsubscribe = onValue(
@@ -247,6 +395,8 @@ export function startFirebaseRealtimeSync() {
   const alertsStore = useAlertsStore()
   const historyStore = useHistoryStore()
   const barrierStore = useBarrierStore()
+  latestAccessRecords = []
+  latestPlateReadingRecords = []
 
   addListener('dashboardCache/kpiSummary', (value) => {
     dashboardStore.setKpiFromRemote(toObject(value))
@@ -302,7 +452,14 @@ export function startFirebaseRealtimeSync() {
   })
 
   addLimitedListener('accessRecords', 500, (value) => {
-    historyStore.setRecords(parseAccessRecords(value))
+    latestAccessRecords = parseAccessRecords(value)
+    historyStore.setRecords(mergeHistoryRecords(latestAccessRecords, latestPlateReadingRecords))
+    dashboardStore.setLastUpdated()
+  })
+
+  addLimitedListener('ingest/plate_readings', 500, (value) => {
+    latestPlateReadingRecords = parsePlateReadingsAsAccessRecords(value)
+    historyStore.setRecords(mergeHistoryRecords(latestAccessRecords, latestPlateReadingRecords))
     dashboardStore.setLastUpdated()
   })
 

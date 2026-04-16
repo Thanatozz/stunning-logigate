@@ -47,7 +47,7 @@ const summaryFeed = computed(() => recentActivity.value.slice(0, 8))
     @trigger-event="triggerIotEvent"
   >
     <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-      <KpiCard title="Camiones en planta" :value="kpi.trucksInPlant" detail="Ocupacion en tiempo real" />
+      <KpiCard title="Camiones en planta" :value="plantState.currentCount" detail="Ocupacion en tiempo real" />
       <KpiCard title="Ingresos de hoy" :value="kpi.todayEntries" detail="Eventos confirmados" />
       <KpiCard title="Salidas de hoy" :value="kpi.todayExits" detail="Eventos confirmados" />
       <KpiCard title="Tiempo promedio" :value="formatMinutes(kpi.avgStayMinutes)" detail="Permanencia actual" />
