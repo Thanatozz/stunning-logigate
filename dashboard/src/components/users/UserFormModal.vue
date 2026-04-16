@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
+import { isValidEmail, isValidPassword, validateRequiredText } from '@/lib/field-validation'
 import type { UserAdminRow } from '@/data/mock/users'
 import type { CreateUserPayload } from '@/stores/users.store'
 
@@ -37,25 +38,32 @@ function onClose() {
 }
 
 function onSubmit() {
-  if (!form.name.trim() || !form.email.trim()) {
-    localError.value = 'Completa nombre y correo.'
+  const nameError = validateRequiredText(form.name, 'Nombre', { min: 3, max: 80 })
+  if (nameError) {
+    localError.value = nameError
     return
   }
-  if (!form.email.includes('@')) {
+
+  if (!isValidEmail(form.email)) {
     localError.value = 'Ingresa un correo valido.'
     return
   }
-  if (form.password.length < 8) {
-    localError.value = 'La contrasena debe tener al menos 8 caracteres.'
+
+  if (!isValidPassword(form.password)) {
+    localError.value =
+      'La contrasena debe tener entre 8 y 72 caracteres, incluyendo al menos una letra y un numero.'
     return
   }
+
   if (form.password !== confirmPassword.value) {
     localError.value = 'Las contrasenas no coinciden.'
     return
   }
+
+  localError.value = ''
   emit('save', {
     name: form.name.trim(),
-    email: form.email.trim(),
+    email: form.email.trim().toLowerCase(),
     role: form.role as UserAdminRow['role'],
     password: form.password,
   })
@@ -76,6 +84,7 @@ function onSubmit() {
             v-model="form.name"
             type="text"
             required
+            maxlength="80"
             class="w-full rounded-xl border border-line px-3 py-2 text-sm outline-none ring-accent focus:ring-2"
             placeholder="Nombre completo"
           />
@@ -87,6 +96,7 @@ function onSubmit() {
             v-model="form.email"
             type="email"
             required
+            maxlength="120"
             class="w-full rounded-xl border border-line px-3 py-2 text-sm outline-none ring-accent focus:ring-2"
             placeholder="usuario@planta.cl"
           />
@@ -110,6 +120,7 @@ function onSubmit() {
             type="password"
             required
             minlength="8"
+            maxlength="72"
             class="w-full rounded-xl border border-line px-3 py-2 text-sm outline-none ring-accent focus:ring-2"
             placeholder="Minimo 8 caracteres"
           />
@@ -122,6 +133,7 @@ function onSubmit() {
             type="password"
             required
             minlength="8"
+            maxlength="72"
             class="w-full rounded-xl border border-line px-3 py-2 text-sm outline-none ring-accent focus:ring-2"
             placeholder="Repite la contrasena"
           />
@@ -150,3 +162,4 @@ function onSubmit() {
     </div>
   </div>
 </template>
+

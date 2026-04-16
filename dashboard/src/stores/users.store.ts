@@ -2,6 +2,7 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { get, onValue, ref as dbRef, remove, set, update, type Unsubscribe } from 'firebase/database'
 import { getIdTokenResult } from 'firebase/auth'
+import { isValidEmail, isValidPassword, validateRequiredText } from '@/lib/field-validation'
 import { mockAuditRows, mockUserAdminRows, type UserAdminRow } from '@/data/mock/users'
 import { firebaseAuth, firebaseDb, isFirebaseConfigured } from '@/lib/firebase'
 
@@ -396,14 +397,22 @@ export const useUsersStore = defineStore('users', () => {
     const cleanEmail = payload.email.trim().toLowerCase()
     const password = payload.password.trim()
 
-    if (!cleanName || !cleanEmail || !password) {
+    const nameError = validateRequiredText(cleanName, 'Nombre', { min: 3, max: 80 })
+    if (nameError) {
+      return { ok: false, reason: nameError }
+    }
+    if (!isValidEmail(cleanEmail)) {
+      return { ok: false, reason: 'Ingresa un correo valido.' }
+    }
+    if (!password) {
       return { ok: false, reason: 'Datos incompletos.' }
     }
-    if (password.length < 8) {
-      return { ok: false, reason: 'La contrasena debe tener al menos 8 caracteres.' }
-    }
-    if (!cleanEmail.includes('@')) {
-      return { ok: false, reason: 'Ingresa un correo valido.' }
+    if (!isValidPassword(password)) {
+      return {
+        ok: false,
+        reason:
+          'La contrasena debe tener entre 8 y 72 caracteres, incluyendo al menos una letra y un numero.',
+      }
     }
 
     const exists = users.value.some((user) => user.email.toLowerCase() === cleanEmail)

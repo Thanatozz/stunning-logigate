@@ -1,5 +1,6 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
+import { isValidFirmware, validateRequiredText } from '@/lib/field-validation'
 import { mockDevices } from '@/data/mock/devices'
 import type { Device, DeviceStatus } from '@/types/domain'
 
@@ -52,19 +53,36 @@ export const useDevicesStore = defineStore('devices', () => {
   }
 
   function addDevice(payload: CreateDevicePayload) {
+    const cleanName = payload.name.trim()
+    const cleanAccessPoint = payload.accessPoint.trim()
+    const nameError = validateRequiredText(cleanName, 'Nombre del dispositivo', { min: 3, max: 80 })
+    const accessPointError = validateRequiredText(cleanAccessPoint, 'Punto de acceso', { min: 2, max: 80 })
+    if (nameError || accessPointError) {
+      return null
+    }
+
     const status = payload.status ?? 'online'
-    const signal =
-      payload.signal ??
-      (status === 'offline' ? 0 : status === 'degradado' ? 55 : 88)
+    const rawSignal = Number(
+      payload.signal ?? (status === 'offline' ? 0 : status === 'degradado' ? 55 : 88),
+    )
+    const signal = Number.isFinite(rawSignal)
+      ? Math.max(0, Math.min(100, rawSignal))
+      : status === 'offline'
+        ? 0
+        : status === 'degradado'
+          ? 55
+          : 88
+    const firmware = (payload.firmware || 'v1.0.0').trim()
+    const safeFirmware = isValidFirmware(firmware) ? firmware : 'v1.0.0'
 
     const next: Device = {
       id: `DEV-${Date.now()}`,
-      name: payload.name.trim(),
+      name: cleanName,
       type: payload.type,
-      accessPoint: payload.accessPoint.trim(),
+      accessPoint: cleanAccessPoint,
       status,
       signal,
-      firmware: (payload.firmware || 'v1.0.0').trim(),
+      firmware: safeFirmware,
       lastSeen: new Date().toISOString(),
     }
 

@@ -164,10 +164,18 @@ export const useSettingsStore = defineStore('settings', () => {
     void persistSettings()
   }
 
-  function addAccessPoint(name: string, location: string) {
+function addAccessPoint(name: string, location: string) {
     const normalizedName = name.trim()
     const normalizedLocation = location.trim()
     if (!normalizedName || !normalizedLocation) return
+    if (normalizedName.length < 3 || normalizedName.length > 60) return
+    if (normalizedLocation.length < 3 || normalizedLocation.length > 80) return
+
+    const normalizedNameKey = normalizeAccessPointKey(normalizedName)
+    const duplicatedName = settings.value.accessPoints.some(
+      (item) => normalizeAccessPointKey(item.name) === normalizedNameKey,
+    )
+    if (duplicatedName) return
 
     const baseId = normalizeAccessPointKey(normalizedName) || `point-${Date.now()}`
     const uniqueId = settings.value.accessPoints.some(

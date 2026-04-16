@@ -3,6 +3,8 @@ import { computed, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import AppSectionHeader from '@/components/common/AppSectionHeader.vue'
 import SettingsForm from '@/components/settings/SettingsForm.vue'
+import { validateRequiredText } from '@/lib/field-validation'
+import { normalizeAccessPointKey } from '@/lib/access-point'
 import { useSettingsStore } from '@/stores/settings.store'
 import type { SystemSettings } from '@/types/domain'
 
@@ -11,6 +13,7 @@ const { settings, syncError } = storeToRefs(settingsStore)
 
 const pointName = ref('')
 const pointLocation = ref('')
+const addPointError = ref('')
 
 const model = computed<SystemSettings>({
   get: () => settings.value,
@@ -22,9 +25,29 @@ const model = computed<SystemSettings>({
 function addAccessPoint() {
   const cleanName = pointName.value.trim()
   const cleanLocation = pointLocation.value.trim()
-  if (!cleanName || !cleanLocation) {
+
+  const nameError = validateRequiredText(cleanName, 'Nombre del punto', { min: 3, max: 60 })
+  if (nameError) {
+    addPointError.value = nameError
     return
   }
+
+  const locationError = validateRequiredText(cleanLocation, 'Ubicacion', { min: 3, max: 80 })
+  if (locationError) {
+    addPointError.value = locationError
+    return
+  }
+
+  const normalizedName = normalizeAccessPointKey(cleanName)
+  const exists = settings.value.accessPoints.some(
+    (point) => normalizeAccessPointKey(point.name) === normalizedName,
+  )
+  if (exists) {
+    addPointError.value = 'Ya existe un punto de acceso con ese nombre.'
+    return
+  }
+
+  addPointError.value = ''
   settingsStore.addAccessPoint(cleanName, cleanLocation)
   pointName.value = ''
   pointLocation.value = ''
@@ -61,12 +84,14 @@ onMounted(() => {
         <input
           v-model="pointName"
           type="text"
+          maxlength="60"
           placeholder="Nombre (ej: Porton Este)"
           class="rounded-xl border border-line px-3 py-2 text-sm outline-none ring-accent focus:ring-2"
         />
         <input
           v-model="pointLocation"
           type="text"
+          maxlength="80"
           placeholder="Ubicacion"
           class="rounded-xl border border-line px-3 py-2 text-sm outline-none ring-accent focus:ring-2"
         />
@@ -78,6 +103,13 @@ onMounted(() => {
           Agregar punto
         </button>
       </div>
+
+      <p
+        v-if="addPointError"
+        class="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+      >
+        {{ addPointError }}
+      </p>
     </section>
   </div>
 </template>

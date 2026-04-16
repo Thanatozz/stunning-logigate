@@ -50,6 +50,7 @@ let activeStayAlertIds = new Set<string>()
 let offlineAlertContextById = new Map<string, { name: string; accessPoint: string }>()
 let stayAlertContextById = new Map<string, { plate: string; accessPoint: string; limitMinutes: number }>()
 let excesoAlertActive = false
+let lastStateSyncMs = 0
 
 function toNumber(value: unknown, fallback = 0) {
   const parsed = Number(value)
@@ -458,7 +459,7 @@ function normalizeOcrConfidenceFromPlateReading(item: Record<string, unknown>): 
 
 function parsePlateReadingsAsAccessRecords(value: unknown): AccessRecord[] {
   const source = toObject(value)
-  return Object.entries(source)
+  const records = Object.entries(source)
     .map(([id, raw]) => {
       const item = toObject(raw)
       const plate = normalizePlateDisplay(item.plate, '')
@@ -475,7 +476,37 @@ function parsePlateReadingsAsAccessRecords(value: unknown): AccessRecord[] {
         deviceId: String(item.deviceId ?? 'device-unknown'),
       }
     })
-    .sort((a, b) => Date.parse(b.timestamp) - Date.parse(a.timestamp))
+
+  const insideByPlate = new Set<string>()
+  const normalized = [...records]
+    .sort((a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp))
+    .map((record) => {
+      const plateKey = normalizePlate(record.plate)
+      if (!plateKey || plateKey === 'SINPLACA') return record
+
+      const currentlyInside = insideByPlate.has(plateKey)
+      let eventType: AccessEventType = record.eventType
+
+      if (record.eventType === 'ingreso' && currentlyInside) {
+        eventType = 'salida'
+      } else if (record.eventType === 'salida' && !currentlyInside) {
+        eventType = 'ingreso'
+      }
+
+      if (eventType === 'ingreso') {
+        insideByPlate.add(plateKey)
+      } else {
+        insideByPlate.delete(plateKey)
+      }
+
+      if (eventType === record.eventType) return record
+      return {
+        ...record,
+        eventType,
+      }
+    })
+
+  return normalized.sort((a, b) => Date.parse(b.timestamp) - Date.parse(a.timestamp))
 }
 
 function mergeHistoryRecords(records: AccessRecord[], plateReadings: AccessRecord[]): AccessRecord[] {
@@ -491,6 +522,124 @@ function mergeHistoryRecords(records: AccessRecord[], plateReadings: AccessRecor
   }
 
   return Array.from(dedup.values()).sort((a, b) => Date.parse(b.timestamp) - Date.parse(a.timestamp))
+}
+
+function buildTruckSetSignature(trucks: TruckInside[]): Set<string> {
+  return new Set(
+    trucks.map((truck) => {
+      const plateKey = normalizePlate(truck.plate)
+      const accessPointKey =
+        normalizeAccessPointKey(truck.accessPoint) ||
+        sanitizeRtdbKeySegment(String(truck.accessPoint ?? realtimeAccessPoint))
+      return `${plateKey}|${accessPointKey}`
+    }),
+  )
+}
+
+function hasSameTruckSet(current: TruckInside[], next: TruckInside[]): boolean {
+  if (current.length !== next.length) return false
+
+  const currentSet = buildTruckSetSignature(current)
+  const nextSet = buildTruckSetSignature(next)
+  if (currentSet.size !== nextSet.size) return false
+
+  for (const key of currentSet) {
+    if (!nextSet.has(key)) return false
+  }
+
+  return true
+}
+
+function getLatestRecordTimestampMs(records: AccessRecord[]): number {
+  let latest = 0
+  for (const record of records) {
+    const value = Date.parse(record.timestamp)
+    if (Number.isFinite(value) && value > latest) latest = value
+  }
+  return latest
+}
+
+function deriveTrucksInsideFromHistory(records: AccessRecord[], vehicles: Vehicle[]): TruckInside[] {
+  const sorted = [...records].sort((a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp))
+  const companyByPlate = new Map<string, string>()
+  for (const vehicle of vehicles) {
+    const plateKey = normalizePlate(vehicle.plate)
+    if (!plateKey) continue
+    companyByPlate.set(plateKey, vehicle.company)
+  }
+
+  const insideByPlate = new Map<string, TruckInside>()
+  for (const record of sorted) {
+    const plateKey = normalizePlate(record.plate)
+    if (!plateKey || plateKey === 'SINPLACA') continue
+
+    const timestampMs = Date.parse(record.timestamp)
+    const enteredAt = Number.isFinite(timestampMs)
+      ? new Date(timestampMs).toISOString()
+      : new Date().toISOString()
+    const company =
+      record.company && record.company !== 'Sin empresa'
+        ? record.company
+        : companyByPlate.get(plateKey) ?? 'Sin empresa'
+    const accessPoint = String(record.accessPoint ?? realtimeAccessPoint)
+
+    if (record.eventType === 'ingreso') {
+      if (insideByPlate.has(plateKey)) {
+        // Regla operativa: si una patente vuelve a "ingresar" estando dentro, se interpreta como salida.
+        insideByPlate.delete(plateKey)
+      } else {
+        insideByPlate.set(plateKey, {
+          plate: normalizePlateDisplay(record.plate, plateKey),
+          company,
+          enteredAt,
+          accumulatedMinutes: 0,
+          accessPoint,
+        })
+      }
+      continue
+    }
+
+    insideByPlate.delete(plateKey)
+  }
+
+  const nowMs = Date.now()
+  return Array.from(insideByPlate.values())
+    .map((truck) => {
+      const enteredMs = Date.parse(truck.enteredAt)
+      const accumulatedMinutes = Number.isFinite(enteredMs)
+        ? Math.max(0, Math.floor((nowMs - enteredMs) / 60000))
+        : truck.accumulatedMinutes
+      return {
+        ...truck,
+        accumulatedMinutes,
+      }
+    })
+    .sort((a, b) => Date.parse(b.enteredAt) - Date.parse(a.enteredAt))
+}
+
+function syncPlantStateFromHistory(params: {
+  dashboardStore: ReturnType<typeof useDashboardStore>
+  vehiclesStore: ReturnType<typeof useVehiclesStore>
+}) {
+  const { dashboardStore, vehiclesStore } = params
+  const mergedRecords = mergeHistoryRecords(latestAccessRecords, latestPlateReadingRecords)
+  if (!mergedRecords.length) return
+
+  const derivedTrucks = deriveTrucksInsideFromHistory(mergedRecords, vehiclesStore.vehicles)
+  const stateTrucks = dashboardStore.plantState.trucksInside
+  const stateLooksEmpty =
+    stateTrucks.length === 0 && dashboardStore.plantState.currentCount === 0
+  const diverged = !hasSameTruckSet(stateTrucks, derivedTrucks)
+  const hasHistoryNewerThanState = getLatestRecordTimestampMs(mergedRecords) > lastStateSyncMs
+
+  if (!((stateLooksEmpty && derivedTrucks.length > 0) || (hasHistoryNewerThanState && diverged))) {
+    return
+  }
+
+  dashboardStore.setPlantStateFromRemote({
+    maxCapacity: dashboardStore.plantState.maxCapacity,
+    trucksInside: derivedTrucks,
+  })
 }
 
 function detectInconsistencyEvents(records: AccessRecord[]): AccessRecord[] {
@@ -850,6 +999,7 @@ export function startFirebaseRealtimeSync() {
     { plate: string; accessPoint: string; limitMinutes: number }
   >()
   excesoAlertActive = false
+  lastStateSyncMs = 0
 
   addListener('dashboardCache/kpiSummary', (value) => {
     dashboardStore.setKpiFromRemote(toObject(value))
@@ -886,6 +1036,7 @@ export function startFirebaseRealtimeSync() {
       occupancyLevel: normalizeOccupancyLevel(state.occupancyLevel),
       trucksInside: parseTrucksInside(state.trucksInside),
     })
+    lastStateSyncMs = Date.now()
     dashboardStore.setLastUpdated()
     evaluateAndSyncDerivedAlerts({
       authStore,
@@ -965,6 +1116,10 @@ export function startFirebaseRealtimeSync() {
   addLimitedListener('accessRecords', 500, (value) => {
     latestAccessRecords = parseAccessRecords(value)
     historyStore.setRecords(mergeHistoryRecords(latestAccessRecords, latestPlateReadingRecords))
+    syncPlantStateFromHistory({
+      dashboardStore,
+      vehiclesStore,
+    })
     dashboardStore.setLastUpdated()
     evaluateAndSyncDerivedAlerts({
       authStore,
@@ -978,6 +1133,10 @@ export function startFirebaseRealtimeSync() {
   addLimitedListener('ingest/plate_readings', 500, (value) => {
     latestPlateReadingRecords = parsePlateReadingsAsAccessRecords(value)
     historyStore.setRecords(mergeHistoryRecords(latestAccessRecords, latestPlateReadingRecords))
+    syncPlantStateFromHistory({
+      dashboardStore,
+      vehiclesStore,
+    })
     dashboardStore.setLastUpdated()
     evaluateAndSyncDerivedAlerts({
       authStore,
@@ -1015,6 +1174,7 @@ export function stopFirebaseRealtimeSync() {
     { plate: string; accessPoint: string; limitMinutes: number }
   >()
   excesoAlertActive = false
+  lastStateSyncMs = 0
   running = false
 }
 

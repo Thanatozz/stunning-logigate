@@ -1,5 +1,10 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
+import {
+  isValidFirmware,
+  validateNumberInRange,
+  validateRequiredText,
+} from '@/lib/field-validation'
 import type { DeviceStatus, DeviceType } from '@/types/domain'
 import type { CreateDevicePayload } from '@/stores/devices.store'
 
@@ -76,16 +81,29 @@ function onClose() {
 }
 
 function onSubmit() {
-  if (!form.name.trim()) {
-    localError.value = 'Ingresa un nombre para el dispositivo.'
+  localError.value = ''
+
+  const nameError = validateRequiredText(form.name, 'Nombre del dispositivo', { min: 3, max: 80 })
+  if (nameError) {
+    localError.value = nameError
     return
   }
-  if (!form.accessPoint.trim()) {
-    localError.value = 'Selecciona un punto de acceso.'
+
+  const accessPointError = validateRequiredText(form.accessPoint, 'Punto de acceso', { min: 2, max: 80 })
+  if (accessPointError) {
+    localError.value = accessPointError
     return
   }
-  if ((form.signal ?? 0) < 0 || (form.signal ?? 0) > 100) {
-    localError.value = 'La senal debe estar entre 0 y 100.'
+
+  const signalError = validateNumberInRange(form.signal, 'La senal', 0, 100)
+  if (signalError) {
+    localError.value = signalError
+    return
+  }
+
+  if (!isValidFirmware(form.firmware ?? '')) {
+    localError.value =
+      'Firmware invalido. Usa solo letras, numeros, punto, guion o guion bajo (maximo 40 caracteres).'
     return
   }
 
@@ -113,6 +131,7 @@ function onSubmit() {
             v-model="form.name"
             type="text"
             required
+            maxlength="80"
             class="w-full rounded-xl border border-line px-3 py-2 text-sm outline-none ring-accent focus:ring-2"
             placeholder="ESP32-CAM Porton Norte"
           />
@@ -170,6 +189,7 @@ function onSubmit() {
           <input
             v-model="form.firmware"
             type="text"
+            maxlength="40"
             class="w-full rounded-xl border border-line px-3 py-2 text-sm outline-none ring-accent focus:ring-2"
             placeholder="v1.0.0"
           />
@@ -201,3 +221,4 @@ function onSubmit() {
     </div>
   </div>
 </template>
+
