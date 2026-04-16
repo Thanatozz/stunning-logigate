@@ -122,6 +122,16 @@ function isReasonableTimestamp(ms: number | null): ms is number {
   return value >= min && value <= max
 }
 
+function pickBestTimestamp(...candidates: unknown[]): string {
+  for (const candidate of candidates) {
+    const ms = toTimestampMs(candidate)
+    if (isReasonableTimestamp(ms)) {
+      return new Date(ms).toISOString()
+    }
+  }
+  return new Date().toISOString()
+}
+
 function parseDeviceLastSeen(item: Record<string, unknown>): string {
   const candidates = [
     toTimestampMs(item.lastSeenServer),
@@ -433,7 +443,7 @@ function parseAccessRecords(value: unknown): AccessRecord[] {
         plate: normalizePlateDisplay(item.plate),
         company: String(item.company ?? 'Sin empresa'),
         eventType: normalizeEventType(item.eventType),
-        timestamp: toIso(item.timestamp),
+        timestamp: pickBestTimestamp(item.timestamp, item.capturedAt, item.capturedAtServer, item.capturedAtEpochMs),
         accessPoint: String(item.accessPoint ?? realtimeAccessPoint),
         ocrConfidence: toNumber(item.ocrConfidence, 0),
         stayMinutes: toNullableNumber(item.stayMinutes),
@@ -468,7 +478,7 @@ function parsePlateReadingsAsAccessRecords(value: unknown): AccessRecord[] {
         plate: plate.length ? plate : 'SIN-PLACA',
         company: String(item.company ?? 'Sin empresa'),
         eventType: normalizeEventTypeFromPlateReading(item),
-        timestamp: toIso(item.capturedAt ?? item.timestamp),
+        timestamp: pickBestTimestamp(item.capturedAt, item.timestamp, item.capturedAtServer, item.capturedAtEpochMs),
         accessPoint: String(item.accessPoint ?? realtimeAccessPoint),
         ocrConfidence: normalizeOcrConfidenceFromPlateReading(item),
         stayMinutes: null,
