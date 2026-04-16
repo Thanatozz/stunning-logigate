@@ -6,7 +6,7 @@
     "devices": {
       "$deviceId": {
         ".read": "auth != null",
-        ".write": "auth != null && (auth.token.admin === true || root.child('users').child(auth.uid).child('role').val() === 'admin' || auth.token.device_id === $deviceId)",
+        ".write": "auth != null && (auth.token.admin === true || root.child('users').child(auth.uid).child('role').val() === 'admin' || auth.token.device_id === $deviceId || (root.child('users').child(auth.uid).child('role').val() === 'esp_device' && (root.child('users').child(auth.uid).child('deviceId').val() === $deviceId || root.child('users').child(auth.uid).child('device_id').val() === $deviceId)))",
         "type": {
           ".validate": "newData.isString() && (newData.val() === 'esp32_cam' || newData.val() === 'sensor_ir' || newData.val() === 'sensor_ultrasonico' || newData.val() === 'barrera_servo')"
         },
@@ -36,7 +36,13 @@
       "detections": {
         "$eventId": {
           ".read": "auth.token.admin === true || auth.token.isCloudFunction === true",
-          ".write": "auth.token.device_id != null || auth.token.isCloudFunction === true"
+          ".write": "auth.token.device_id != null || auth.token.isCloudFunction === true || (root.child('users').child(auth.uid).child('role').val() === 'esp_device' && (root.child('users').child(auth.uid).child('deviceId').val() === newData.child('deviceId').val() || root.child('users').child(auth.uid).child('device_id').val() === newData.child('deviceId').val()))"
+        }
+      },
+      "plate_readings": {
+        "$eventId": {
+          ".read": "auth.token.admin === true || auth.token.isCloudFunction === true",
+          ".write": "auth.token.device_id != null || auth.token.isCloudFunction === true || (root.child('users').child(auth.uid).child('role').val() === 'esp_device' && (root.child('users').child(auth.uid).child('deviceId').val() === newData.child('deviceId').val() || root.child('users').child(auth.uid).child('device_id').val() === newData.child('deviceId').val()))"
         }
       }
     },
@@ -64,7 +70,7 @@
     "barrier": {
       "$accessPoint": {
         ".read": "auth != null",
-        ".write": "auth != null && (auth.token.isCloudFunction === true || auth.token.admin === true || auth.token.supervisor === true || root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'supervisor' || auth.token.device_access_point === $accessPoint)",
+        ".write": "auth != null && (auth.token.isCloudFunction === true || auth.token.admin === true || auth.token.supervisor === true || root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'supervisor' || auth.token.device_access_point === $accessPoint || (root.child('users').child(auth.uid).child('role').val() === 'esp_device' && (root.child('users').child(auth.uid).child('accessPoint').val() === $accessPoint || root.child('users').child(auth.uid).child('device_access_point').val() === $accessPoint)))",
         "status": {
           ".validate": "newData.isString() && (newData.val() === 'abierta' || newData.val() === 'cerrada' || newData.val() === 'en_transicion')"
         },

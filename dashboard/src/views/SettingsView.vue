@@ -1,5 +1,5 @@
-﻿<script setup lang="ts">
-import { computed, ref } from 'vue'
+<script setup lang="ts">
+import { computed, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import AppSectionHeader from '@/components/common/AppSectionHeader.vue'
 import SettingsForm from '@/components/settings/SettingsForm.vue'
@@ -7,7 +7,7 @@ import { useSettingsStore } from '@/stores/settings.store'
 import type { SystemSettings } from '@/types/domain'
 
 const settingsStore = useSettingsStore()
-const { settings } = storeToRefs(settingsStore)
+const { settings, syncError } = storeToRefs(settingsStore)
 
 const pointName = ref('')
 const pointLocation = ref('')
@@ -15,7 +15,7 @@ const pointLocation = ref('')
 const model = computed<SystemSettings>({
   get: () => settings.value,
   set: (value) => {
-    settings.value = value
+    settingsStore.setSettings(value)
   },
 })
 
@@ -29,6 +29,10 @@ function addAccessPoint() {
   pointName.value = ''
   pointLocation.value = ''
 }
+
+onMounted(() => {
+  void settingsStore.loadSettingsFromFirebase()
+})
 </script>
 
 <template>
@@ -38,11 +42,20 @@ function addAccessPoint() {
       subtitle="Ajusta umbrales operativos, OCR y reglas de acceso de la planta."
     />
 
+    <p
+      v-if="syncError"
+      class="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+    >
+      {{ syncError }}
+    </p>
+
     <SettingsForm v-model="model" />
 
     <section class="card-panel p-4 sm:p-5">
       <h3 class="text-sm font-semibold">Agregar punto de acceso</h3>
-      <p class="mt-1 text-sm text-muted">Disponible para administradores en este MVP.</p>
+      <p class="mt-1 text-sm text-muted">
+        Disponible para administradores en este MVP.
+      </p>
 
       <div class="mt-4 grid gap-3 sm:grid-cols-3">
         <input

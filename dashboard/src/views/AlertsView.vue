@@ -10,7 +10,7 @@ import { useAlertsStore } from '@/stores/alerts.store'
 import type { AlertSeverity, AlertStatus, AlertType } from '@/types/domain'
 
 const alertsStore = useAlertsStore()
-const { filters, filteredAlerts, isLoading } = storeToRefs(alertsStore)
+const { filters, filteredAlerts, isLoading, lastError } = storeToRefs(alertsStore)
 
 const pageSize = 10
 const currentPage = ref(1)
@@ -92,6 +92,13 @@ watch(totalPages, (value) => {
       v-model:status="statusModel"
     />
 
+    <p
+      v-if="lastError"
+      class="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+    >
+      {{ lastError }}
+    </p>
+
     <TableSkeleton v-if="isLoading" :columns="6" :rows="8" />
 
     <NoResultsState
@@ -103,8 +110,8 @@ watch(totalPages, (value) => {
     <template v-else>
       <AlertsTable
         :alerts="paginatedAlerts"
-        @resolve="alertsStore.resolveAlert"
-        @ignore="alertsStore.ignoreAlert"
+        @resolve="(id) => void alertsStore.resolveAlert(id)"
+        @ignore="(id) => void alertsStore.ignoreAlert(id)"
       />
 
       <section class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line bg-panel px-3 py-2 text-xs text-muted">

@@ -7,6 +7,7 @@ Este documento define como conectar todo de forma incremental y con responsabili
 ```mermaid
 flowchart LR
   A[ESP32 Gate Controller] -->|write| B[RTDB: ingest/detections]
+  A[ESP32 Gate Controller] -->|write| H[RTDB: ingest/plate_readings]
   A -->|write| C[RTDB: devices + barrier]
   D[Dashboard Vue] -->|write manual command| E[RTDB: commands/{accessPoint}]
   D -->|read realtime| F[RTDB: dashboardCache/state/accessRecords/alerts/devices/barrier]
@@ -24,15 +25,16 @@ flowchart LR
 ## 2) Flujo operacional end-to-end
 
 1. ESP32 detecta presencia y publica en `ingest/detections/{eventId}`.
-2. Cloud Function procesa evento:
+2. ESP32 publica resultado OCR/ANPR en `ingest/plate_readings/{eventId}`.
+3. Cloud Function procesa evento:
    - Determina patente/autorizacion (OCR + `vehicles`).
    - Calcula `ingreso` o `salida` usando `state/trucksInside`.
    - Crea `accessRecords`.
    - Actualiza `state`, `alerts`, `dashboardCache`.
    - Si autorizado, actualiza `commands/{accessPoint}.autoOpenUntil`.
-3. ESP32 lee `commands/{accessPoint}` y abre/cierra barrera.
-4. ESP32 publica heartbeat en `devices/{deviceId}` y estado en `barrier/{accessPoint}`.
-5. Dashboard escucha nodos realtime y refresca stores.
+4. ESP32 lee `commands/{accessPoint}` y abre/cierra barrera.
+5. ESP32 publica heartbeat en `devices/{deviceId}` y estado en `barrier/{accessPoint}`.
+6. Dashboard escucha nodos realtime y refresca stores.
 
 ## 3) Mapeo de nodos Firebase a stores actuales del dashboard
 
@@ -45,6 +47,8 @@ flowchart LR
 | `barrier.store` | `barrier/{accessPoint}` + escritura en `commands/{accessPoint}` |
 | `settings.store` | `settings` |
 | `users.store` | `users` |
+
+Nota: roles tecnicos como `esp_device` se usan para autenticacion de dispositivos y no deben mostrarse en la tabla de usuarios del dashboard.
 
 ## 4) Contrato minimo para comandos de barrera
 
@@ -72,8 +76,11 @@ Ruta: `commands/{accessPoint}`
 1. Crear RTDB.
 2. Cargar estructura inicial con `docs/firebase_schema_logigate.json`.
 3. Aplicar `docs/firebase_rules_logigate.json`.
-4. Crear usuarios Auth (admin/supervisor).
-5. Asignar custom claims (`role`, `admin`, `supervisor`).
+4. Crear usuarios Auth:
+   - Humanos: `admin` y `supervisor`.
+   - Dispositivos: `esp_device` (ejemplo: `ESP32 Gate Controller Norte`).
+5. Asignar custom claims para usuarios humanos (`role`, `admin`, `supervisor`).
+6. Para `esp_device`, definir alcance por `deviceId` y `accessPoint` (en `/users/{uid}` y/o claims `device_id`, `device_access_point`).
 
 ## Etapa B: Dispositivo ESP32
 
@@ -83,6 +90,7 @@ Ruta: `commands/{accessPoint}`
    - `devices/{deviceId}`
    - `barrier/{accessPoint}`
    - `ingest/detections/{eventId}`
+   - `ingest/plate_readings/{eventId}`
 4. Probar comando manual desde Firebase Console en `commands/{accessPoint}`.
 
 ## Etapa C: Backend cloud

@@ -3,10 +3,10 @@ import {
   onValue,
   query,
   ref as dbRef,
-  update,
   type Unsubscribe,
 } from 'firebase/database'
-import { firebaseAccessPoint, firebaseDb, isFirebaseConfigured, isVirtualGateEnabled } from '@/lib/firebase'
+import { firebaseAccessPoint, firebaseDb, isFirebaseConfigured } from '@/lib/firebase'
+import { normalizeAccessPointKey } from '@/lib/access-point'
 import { useAlertsStore } from '@/stores/alerts.store'
 import { useBarrierStore } from '@/stores/barrier.store'
 import { useDashboardStore } from '@/stores/dashboard.store'
@@ -30,6 +30,8 @@ import type {
 
 let running = false
 const unsubscribers: Unsubscribe[] = []
+let realtimeAccessPoint =
+  normalizeAccessPointKey(firebaseAccessPoint) || 'porton_norte'
 
 function toNumber(value: unknown, fallback = 0) {
   const parsed = Number(value)
@@ -129,7 +131,7 @@ function parseTrucksInside(value: unknown): TruckInside[] {
         company: String(item.company ?? 'Sin empresa'),
         enteredAt: toIso(item.enteredAt),
         accumulatedMinutes: toNumber(item.accumulatedMinutes, 0),
-        accessPoint: String(item.accessPoint ?? firebaseAccessPoint),
+        accessPoint: String(item.accessPoint ?? realtimeAccessPoint),
       }
     })
     .sort((a, b) => Date.parse(b.enteredAt) - Date.parse(a.enteredAt))
@@ -160,7 +162,7 @@ function parseDevices(value: unknown): Device[] {
         id,
         name: String(item.name ?? id),
         type: normalizeDeviceType(item.type),
-        accessPoint: String(item.accessPoint ?? firebaseAccessPoint),
+        accessPoint: String(item.accessPoint ?? realtimeAccessPoint),
         status: normalizeDeviceStatus(item.status),
         lastSeen: toIso(item.lastSeen),
         signal: toNumber(item.signal, 0),
@@ -200,7 +202,7 @@ function parseAccessRecords(value: unknown): AccessRecord[] {
         company: String(item.company ?? 'Sin empresa'),
         eventType: normalizeEventType(item.eventType),
         timestamp: toIso(item.timestamp),
-        accessPoint: String(item.accessPoint ?? firebaseAccessPoint),
+        accessPoint: String(item.accessPoint ?? realtimeAccessPoint),
         ocrConfidence: toNumber(item.ocrConfidence, 0),
         stayMinutes: toNullableNumber(item.stayMinutes),
         barrierMode: normalizeBarrierMode(item.barrierMode),
@@ -282,10 +284,10 @@ export function startFirebaseRealtimeSync() {
     dashboardStore.setLastUpdated()
   })
 
-  addListener(`barrier/${firebaseAccessPoint}`, (value) => {
+  addListener(`barrier/${realtimeAccessPoint}`, (value) => {
     const barrier = toObject(value)
     barrierStore.setBarrierSnapshot({
-      accessPoint: firebaseAccessPoint,
+      accessPoint: realtimeAccessPoint,
       status: normalizeBarrierStatus(barrier.status),
       mode: normalizeBarrierMode(barrier.mode),
       lastActionAt: toIso(barrier.lastActionAt),
@@ -321,43 +323,21 @@ export function isFirebaseRealtimeSyncRunning() {
   return running
 }
 
-export async function sendBarrierCommand(input: {
-  mode: BarrierMode
-  action: 'none' | 'abrir' | 'cerrar'
-  updatedBy: string
-}) {
-  if (!isFirebaseConfigured || !firebaseDb) {
-    throw new Error('Firebase no esta configurado en el dashboard')
+export function setRealtimeSyncAccessPoint(accessPoint: string) {
+  const normalized =
+    normalizeAccessPointKey(accessPoint) ||
+    normalizeAccessPointKey(firebaseAccessPoint) ||
+    'porton_norte'
+
+  if (normalized === realtimeAccessPoint) return
+  realtimeAccessPoint = normalized
+
+  if (running) {
+    stopFirebaseRealtimeSync()
+    startFirebaseRealtimeSync()
   }
+}
 
-  const requestId = `cmd-${Date.now()}-${Math.floor(Math.random() * 10000)
-    .toString()
-    .padStart(4, '0')}`
-
-  const updatedAt = new Date().toISOString()
-  const payload = {
-    requestId,
-    mode: input.mode,
-    action: input.action,
-    autoOpenUntil: 0,
-    updatedBy: input.updatedBy,
-    updatedAt,
-  }
-
-  await update(dbRef(firebaseDb, `commands/${firebaseAccessPoint}`), payload)
-
-  if (isVirtualGateEnabled) {
-    const barrierPatch: Record<string, unknown> = {
-      mode: input.mode,
-      lastActionAt: updatedAt,
-      lastActionBy: input.updatedBy,
-    }
-
-    if (input.action === 'abrir') barrierPatch.status = 'abierta'
-    if (input.action === 'cerrar') barrierPatch.status = 'cerrada'
-
-    await update(dbRef(firebaseDb, `barrier/${firebaseAccessPoint}`), barrierPatch)
-  }
-
-  return requestId
+export function getRealtimeSyncAccessPoint() {
+  return realtimeAccessPoint
 }

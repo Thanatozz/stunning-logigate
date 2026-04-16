@@ -1,5 +1,6 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { computed, ref } from 'vue'
+import { storeToRefs } from 'pinia'
 import DashboardShell from '@/components/dashboard/DashboardShell.vue'
 import DevicesStatusPanel from '@/components/dashboard/DevicesStatusPanel.vue'
 import BarrierControlCard from '@/components/dashboard/BarrierControlCard.vue'
@@ -34,14 +35,18 @@ const {
 const controlFeed = computed(() => recentActivity.value.slice(0, 10))
 const devicesStore = useDevicesStore()
 const settingsStore = useSettingsStore()
+const { controlAccessPoint, activeAccessPointOptions } = storeToRefs(settingsStore)
 const isDeviceModalOpen = ref(false)
 
-const activeAccessPoints = computed(() => {
-  const active = settingsStore.settings.accessPoints
-    .filter((point) => point.active)
-    .map((point) => point.name)
-  if (active.length) return active
-  return ['Porton Norte', 'Porton Sur']
+const controlAccessPointModel = computed({
+  get: () => controlAccessPoint.value,
+  set: (value: string) => settingsStore.setControlAccessPoint(value),
+})
+
+const deviceAccessPoints = computed(() => {
+  const options = activeAccessPointOptions.value.map((item) => item.label)
+  if (options.length) return options
+  return ['Porton Norte']
 })
 
 function openAddDeviceModal() {
@@ -72,7 +77,25 @@ function saveDevice(payload: Parameters<typeof devicesStore.addDevice>[0]) {
     @toggle-demo="toggleIotSimulation"
     @trigger-event="triggerIotEvent"
   >
-    <section class="flex justify-end">
+    <section class="flex flex-wrap items-end justify-between gap-3">
+      <label class="min-w-[220px] space-y-1">
+        <span class="text-xs font-semibold uppercase tracking-wide text-muted">
+          Punto de acceso IoT
+        </span>
+        <select
+          v-model="controlAccessPointModel"
+          class="w-full rounded-xl border border-line bg-white px-3 py-2 text-sm outline-none ring-accent focus:ring-2"
+        >
+          <option
+            v-for="item in activeAccessPointOptions"
+            :key="item.key"
+            :value="item.key"
+          >
+            {{ item.label }}
+          </option>
+        </select>
+      </label>
+
       <button
         type="button"
         class="btn-secondary px-3 py-2 text-sm font-medium"
@@ -104,7 +127,7 @@ function saveDevice(payload: Parameters<typeof devicesStore.addDevice>[0]) {
 
     <DeviceFormModal
       :open="isDeviceModalOpen"
-      :access-points="activeAccessPoints"
+      :access-points="deviceAccessPoints"
       @close="closeAddDeviceModal"
       @save="saveDevice"
     />

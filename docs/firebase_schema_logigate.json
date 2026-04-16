@@ -57,6 +57,31 @@
         "requiresAuthorization": true,
         "firmware": "v2.0.0"
       }
+    },
+    "plate_readings": {
+      "ESP32-GATE-001-pr-1712620111-a1b2c3": {
+        "deviceId": "ESP32-GATE-001",
+        "accessPoint": "porton_norte",
+        "trigger": "entry_rising_edge",
+        "capturedAt": "2026-04-08T23:31:11Z",
+        "capturedAtEpochMs": 1712620111000,
+        "requestOk": true,
+        "httpCode": 200,
+        "hasPlate": true,
+        "plate": "EF9012",
+        "score": 1,
+        "confidence": 0.658,
+        "region": "unknown",
+        "recognitionStatusCode": "patente_identificada_correctamente",
+        "recognitionStatusMessage": "La patente se identifico correctamente",
+        "entryDistanceCm": 184.1,
+        "exitDistanceCm": 999,
+        "entrySensorActive": false,
+        "exitSensorActive": false,
+        "mode": "automatico",
+        "barrierStatus": "cerrada",
+        "plateApiRaw": "{...respuesta JSON plate recognizer...}"
+      }
     }
   },
   "vehicles": {
@@ -156,21 +181,41 @@
     "barrierAutoCloseSeconds": 5
   },
   "users": {
-    "__UID_ADMIN_AUTH__": {
-      "id": "__UID_ADMIN_AUTH__",
-      "name": "Administrador",
+    "zRDPuOMaAhXykpvUWFdG5bDkJLu2": {
+      "id": "zRDPuOMaAhXykpvUWFdG5bDkJLu2",
+      "name": "Maximiliano Castro",
       "email": "admin@logigate.cl",
       "role": "admin",
       "status": "activo",
       "lastLoginAt": "2026-04-08T20:10:00Z"
     },
-    "__UID_SUPERVISOR_AUTH__": {
-      "id": "__UID_SUPERVISOR_AUTH__",
-      "name": "Supervisor",
+    "EpliQTxdhNR4gD1cVeSWljBxkpE3": {
+      "id": "EpliQTxdhNR4gD1cVeSWljBxkpE3",
+      "name": "Rafael Sotomayor",
       "email": "supervisor@logigate.cl",
       "role": "supervisor",
       "status": "activo",
       "lastLoginAt": "2026-04-08T19:55:00Z"
+    },
+    "NTEIGXB6ApOW9JnCisLpuszJZN73": {
+      "id": "NTEIGXB6ApOW9JnCisLpuszJZN73",
+      "name": "Diego Avendaño",
+      "email": "supervisor@logigate.cl",
+      "role": "supervisor",
+      "status": "suspendido",
+      "lastLoginAt": "2026-04-08T19:55:00Z"
+    },
+    "esp32-gate-norte-auth-uid": {
+      "id": "esp32-gate-norte-auth-uid",
+      "name": "ESP32 Gate Controller Norte",
+      "email": "esp32.norte@logigate.local",
+      "role": "esp_device",
+      "status": "activo",
+      "deviceId": "ESP32-GATE-001",
+      "accessPoint": "porton_norte",
+      "lastLoginAt": "2026-04-08T19:55:00Z"
     }
   }
 }
+
+

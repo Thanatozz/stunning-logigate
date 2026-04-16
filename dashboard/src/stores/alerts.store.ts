@@ -2,6 +2,7 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { mockAlerts } from '@/data/mock/alerts'
 import { isFirebaseConfigured } from '@/lib/firebase'
+import { updateAlertStatus } from '@/lib/firebase-writes'
 import type { Alert, AlertSeverity, AlertStatus, AlertType } from '@/types/domain'
 
 interface AlertFilters {
@@ -22,6 +23,7 @@ export interface CreateAlertPayload {
 export const useAlertsStore = defineStore('alerts', () => {
   const alerts = ref<Alert[]>(isFirebaseConfigured ? [] : [...mockAlerts])
   const isLoading = ref(isFirebaseConfigured)
+  const lastError = ref('')
   const filters = ref<AlertFilters>({
     type: '',
     severity: '',
@@ -31,28 +33,54 @@ export const useAlertsStore = defineStore('alerts', () => {
   const filteredAlerts = computed(() =>
     alerts.value.filter((item) => {
       const byType = filters.value.type ? item.type === filters.value.type : true
-      const bySeverity = filters.value.severity ? item.severity === filters.value.severity : true
-      const byStatus = filters.value.status ? item.status === filters.value.status : true
+      const bySeverity = filters.value.severity
+        ? item.severity === filters.value.severity
+        : true
+      const byStatus = filters.value.status
+        ? item.status === filters.value.status
+        : true
       return byType && bySeverity && byStatus
     }),
   )
 
-  const activeAlerts = computed(() => alerts.value.filter((item) => item.status === 'activa'))
+  const activeAlerts = computed(() =>
+    alerts.value.filter((item) => item.status === 'activa'),
+  )
 
   function updateFilters(payload: Partial<AlertFilters>) {
     filters.value = { ...filters.value, ...payload }
   }
 
-  function resolveAlert(id: string) {
+  async function setAlertStatus(id: string, status: AlertStatus) {
     const alert = alerts.value.find((item) => item.id === id)
-    if (!alert) return
-    alert.status = 'resuelta'
+    if (!alert || alert.status === status) return
+
+    const previous = alert.status
+    alert.status = status
+
+    if (!isFirebaseConfigured) {
+      lastError.value = ''
+      return
+    }
+
+    try {
+      await updateAlertStatus({ id, status, updatedBy: 'dashboard' })
+      lastError.value = ''
+    } catch (error) {
+      alert.status = previous
+      lastError.value =
+        error instanceof Error
+          ? error.message
+          : 'No se pudo actualizar alerta en Firebase'
+    }
   }
 
-  function ignoreAlert(id: string) {
-    const alert = alerts.value.find((item) => item.id === id)
-    if (!alert) return
-    alert.status = 'ignorada'
+  async function resolveAlert(id: string) {
+    await setAlertStatus(id, 'resuelta')
+  }
+
+  async function ignoreAlert(id: string) {
+    await setAlertStatus(id, 'ignorada')
   }
 
   function createAlert(payload: CreateAlertPayload) {
@@ -74,7 +102,9 @@ export const useAlertsStore = defineStore('alerts', () => {
   }
 
   function resolveLatestActiveByType(type: AlertType) {
-    const active = alerts.value.find((item) => item.type === type && item.status === 'activa')
+    const active = alerts.value.find(
+      (item) => item.type === type && item.status === 'activa',
+    )
     if (!active) return
     active.status = 'resuelta'
   }
@@ -87,6 +117,7 @@ export const useAlertsStore = defineStore('alerts', () => {
   return {
     alerts,
     isLoading,
+    lastError,
     filters,
     filteredAlerts,
     activeAlerts,

@@ -38,8 +38,9 @@ function toObject(value: unknown): Record<string, unknown> {
   return {}
 }
 
-function normalizeRole(value: unknown): UserAdminRow['role'] {
-  return value === 'admin' ? 'admin' : 'supervisor'
+function normalizeRole(value: unknown): UserAdminRow['role'] | null {
+  if (value === 'admin' || value === 'supervisor') return value
+  return null
 }
 
 function normalizeStatus(value: unknown): UserAdminRow['status'] {
@@ -53,12 +54,14 @@ function parseUsersMap(value: unknown): UserAdminRow[] {
       const item = toObject(raw)
       const email = String(item.email ?? '').trim().toLowerCase()
       if (!email) return null
+      const role = normalizeRole(item.role)
+      if (!role) return null
 
       return {
         id: uid,
         name: String(item.name ?? email.split('@')[0] ?? 'Usuario'),
         email,
-        role: normalizeRole(item.role),
+        role,
         status: normalizeStatus(item.status),
         lastAccess: String(item.lastLoginAt ?? item.lastAccess ?? item.createdAt ?? new Date().toISOString()),
       } satisfies UserAdminRow
