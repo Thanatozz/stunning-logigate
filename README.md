@@ -1,4 +1,4 @@
-# 🚛 Sistema IoT de Monitoreo de Acceso Vehicular
+# Sistema IoT de Monitoreo de Acceso Vehicular
 
 Sistema de monitoreo automatizado de ingreso y salida de camiones en una planta manufacturera, utilizando reconocimiento automático de patentes (ANPR) con ESP32-CAM, Firebase y Vue.js.
 
@@ -8,13 +8,13 @@ Sistema de monitoreo automatizado de ingreso y salida de camiones en una planta 
 
 ---
 
-## 📋 Descripción del Proyecto
+## Descripción del Proyecto
 
 Una pequeña empresa manufacturera necesita automatizar el control de acceso de camiones a su planta. El sistema detecta la llegada de un vehículo mediante un sensor infrarrojo, captura la imagen de su patente con un ESP32-CAM, la envía a Plate Recognizer para reconocimiento OCR, determina automáticamente si es ingreso o salida consultando el estado del vehículo en Firebase, y controla una barrera vehicular. Todo se visualiza en un dashboard web en tiempo real.
 
 ---
 
-## 🏗️ Arquitectura del Sistema
+## Arquitectura del Sistema
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -43,7 +43,7 @@ Una pequeña empresa manufacturera necesita automatizar el control de acceso de 
 
 ---
 
-## 🛠️ Stack Tecnológico
+## Stack Tecnológico
 
 ### Hardware
 | Componente | Función | GPIO | Costo |
@@ -69,7 +69,7 @@ Una pequeña empresa manufacturera necesita automatizar el control de acceso de 
 
 ---
 
-## 📂 Estructura del Proyecto
+## Estructura del Proyecto
 
 ```
 iot-access-control/
@@ -156,7 +156,7 @@ iot-access-control/
 
 ---
 
-## 📊 Requerimientos Funcionales
+## Requerimientos Funcionales
 
 ### Módulo de Gestión de Vehículos (RF-01 a RF-04)
 - [ ] RF-01: Registrar camiones (patente, empresa, tipo de carga, capacidad)
@@ -229,7 +229,7 @@ iot-access-control/
 
 ---
 
-## 🗄️ Estructura de Datos en Firebase
+## Estructura de Datos en Firebase
 
 ```json
 {
@@ -305,7 +305,7 @@ iot-access-control/
 
 ---
 
-## 🖥️ Pantallas del Dashboard
+## Pantallas del Dashboard
 
 ### Acceso por Rol
 
@@ -338,7 +338,7 @@ iot-access-control/
 
 ---
 
-## 🚀 Setup Rápido
+## Setup Rápido
 
 ### 1. Clonar el repositorio
 ```bash
@@ -376,7 +376,7 @@ firebase deploy      # Publicar dashboard
 
 ---
 
-## 🔧 Variables de Entorno
+## Variables de Entorno
 
 ### `firmware/access_control/config.h`
 ```cpp
@@ -402,12 +402,9 @@ export const firebaseConfig = {
   appId: "1:123456789:web:abcdef"
 };
 ```
-
-> ⚠️ **NUNCA subir credenciales reales a GitHub.** Agregar `config.h` y `config.js` al `.gitignore`.
-
 ---
 
-## 📡 Flujo de Datos
+## Flujo de Datos
 
 ```
 1. Sensor IR detecta presencia (GPIO 13 → HIGH)
@@ -431,7 +428,7 @@ export const firebaseConfig = {
 
 ---
 
-## 🎨 Historias de Usuario (Story Points)
+## Historias de Usuario (Story Points)
 
 | ID | Historia | SP | Complejidad |
 |---|---|---|---|
@@ -455,7 +452,7 @@ export const firebaseConfig = {
 
 ---
 
-## 👥 Equipo y Roles (Kanban)
+## Equipo y Roles (Kanban)
 
 | Rol | Responsabilidad |
 |---|---|
@@ -477,6 +474,6 @@ Etiquetas de color:
 
 ---
 
-## 📄 Licencia
+## Licencia
 
 Proyecto académico — Integración de Competencias III.
